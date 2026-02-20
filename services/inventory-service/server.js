@@ -1,15 +1,10 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
+const app = require("./index");
+const { startReservationExpiryWorker } = require("./workers/reservationExpiry");
 
-dotenv.config();
-const app = express();
+const PORT = 4000;
 
-app.use(cors());
-app.use(express.json());
+startReservationExpiryWorker();
 
-app.use("/inventory", require("./routes/inventory"));
-
-app.listen(5000, () => {
-  console.log("Inventory service running on port 5000");
+app.listen(PORT, () => {
+  console.log(`Inventory service running on port ${PORT}`);
 });
