@@ -15,6 +15,7 @@ generator client {
 
 model User {
   id        String   @id @default(uuid())
+  name      String
   email     String   @unique
   password  String
   role      Role
@@ -23,6 +24,6 @@ model User {
 
 enum Role {
   ADMIN
-  NGO
-  WAREHOUSE
+  SUPPLIER
+  HOSPITAL
 }
