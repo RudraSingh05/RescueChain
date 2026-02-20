@@ -33,6 +33,7 @@ model Reservation {
   supplierId String
   type       RequestType
   status     ReservationStatus
+  expiresAt  DateTime?
   createdAt  DateTime @default(now())
 }
 
