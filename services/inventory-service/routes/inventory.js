@@ -35,4 +35,21 @@ router.post("/deduct", async (req, res) => {
   }
 });
 
+router.get("/test-db", async (req, res) => {
+  try {
+    const items = await prisma.inventory.findMany();
+    res.json({
+      success: true,
+      count: items.length,
+      data: items
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

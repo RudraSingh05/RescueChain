@@ -4,6 +4,7 @@ CREATE TABLE "Warehouse" (
     "name" TEXT NOT NULL,
     "latitude" DOUBLE PRECISION NOT NULL,
     "longitude" DOUBLE PRECISION NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Warehouse_pkey" PRIMARY KEY ("id")
 );
@@ -14,13 +15,10 @@ CREATE TABLE "Inventory" (
     "itemName" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL,
     "warehouseId" TEXT NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Inventory_pkey" PRIMARY KEY ("id")
 );
-
--- CreateIndex
-CREATE INDEX "Inventory_itemName_idx" ON "Inventory"("itemName");
 
 -- AddForeignKey
 ALTER TABLE "Inventory" ADD CONSTRAINT "Inventory_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

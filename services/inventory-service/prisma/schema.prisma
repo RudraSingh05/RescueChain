@@ -13,15 +13,16 @@ model Warehouse {
   latitude  Float
   longitude Float
   inventory Inventory[]
+  createdAt DateTime @default(now())
 }
+
 
 model Inventory {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   itemName    String
   quantity    Int
-  warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
-  updatedAt   DateTime  @updatedAt
-
-  @@index([itemName])
+  warehouseId String
+  createdAt   DateTime  @default(now())
 }
+

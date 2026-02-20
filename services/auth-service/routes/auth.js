@@ -52,11 +52,20 @@ router.post("/login", async (req, res) => {
 router.get("/test-db", async (req, res) => {
   try {
     const users = await prisma.user.findMany();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
+
 
 
 module.exports = router;
