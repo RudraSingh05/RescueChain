@@ -7,22 +7,49 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Warehouse {
+model Supplier {
   id        String   @id @default(uuid())
   name      String
+  type      SupplierType
   latitude  Float
   longitude Float
   inventory Inventory[]
   createdAt DateTime @default(now())
 }
 
-
 model Inventory {
-  id          String    @id @default(uuid())
-  itemName    String
-  quantity    Int
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
-  warehouseId String
-  createdAt   DateTime  @default(now())
+  id         String   @id @default(uuid())
+  itemName   String
+  quantity   Int
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  supplierId String
+  createdAt  DateTime @default(now())
 }
 
+model Reservation {
+  id         String   @id @default(uuid())
+  itemName   String
+  quantity   Int
+  supplierId String
+  type       RequestType
+  status     ReservationStatus
+  createdAt  DateTime @default(now())
+}
+
+enum SupplierType {
+  WAREHOUSE
+  PHARMACY
+  BLOOD_BANK
+  OXYGEN_SUPPLIER
+}
+
+enum RequestType {
+  PICKUP
+  DELIVERY
+}
+
+enum ReservationStatus {
+  RESERVED
+  COMPLETED
+  CANCELLED
+}
