@@ -24,6 +24,10 @@ model Inventory {
   supplier   Supplier @relation(fields: [supplierId], references: [id])
   supplierId String
   createdAt  DateTime @default(now())
+
+  @@unique([supplierId, itemName])
+  @@index([itemName])
+  @@index([supplierId])
 }
 
 model Reservation {

@@ -8,31 +8,33 @@ const prisma = new PrismaClient();
 router.post("/deduct", async (req, res) => {
   const { itemName, quantity } = req.body;
 
+  if (!itemName || !quantity) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
 
-      const item = await tx.inventory.findFirst({
-        where: { itemName },
-        orderBy: { quantity: "desc" }
-      });
-
-      if (!item || item.quantity < quantity) {
-        throw new Error("Insufficient stock");
-      }
-
-      await tx.inventory.update({
-        where: { id: item.id },
+      const updated = await tx.inventory.updateMany({
+        where: {
+          itemName,
+          quantity: { gte: quantity },
+        },
         data: {
-          quantity: item.quantity - quantity
-        }
+          quantity: { decrement: quantity },
+        },
       });
+
+      if (updated.count === 0) {
+        throw new Error("Insufficient stock or concurrent update");
+      }
 
     });
 
-    res.json({ message: "Stock deducted safely" });
+    res.json({ message: "Stock deducted safely (atomic)" });
 
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(409).json({ error: err.message });
   }
 });
 
@@ -95,20 +97,23 @@ router.post("/reserve", async (req, res) => {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const inventory = await tx.inventory.findFirst({
-        where: { supplierId, itemName },
+
+      const updated = await tx.inventory.updateMany({
+        where: {
+          supplierId,
+          itemName,
+          quantity: { gte: quantity },
+        },
+        data: {
+          quantity: { decrement: quantity },
+        },
       });
 
-      if (!inventory || inventory.quantity < quantity) {
-        throw new Error("Insufficient stock");
+      if (updated.count === 0) {
+        throw new Error("Insufficient stock or concurrent reservation");
       }
 
-      await tx.inventory.update({
-        where: { id: inventory.id },
-        data: { quantity: inventory.quantity - quantity },
-      });
-
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 1 * 60 * 1000);
 
       const reservation = await tx.reservation.create({
         data: {
@@ -128,8 +133,9 @@ router.post("/reserve", async (req, res) => {
       message: "Reservation successful",
       reservation: result,
     });
+
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(409).json({ error: error.message });
   }
 });
 
