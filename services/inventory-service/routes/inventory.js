@@ -113,7 +113,15 @@ router.post("/reserve", async (req, res) => {
         throw new Error("Insufficient stock or concurrent reservation");
       }
 
-      const expiresAt = new Date(Date.now() + 1 * 60 * 1000);
+      let expiryDuration;
+
+      if (requestType === "PICKUP") {
+        expiryDuration = 15 * 60 * 1000; // 15 minutes
+      } else if (requestType === "DELIVERY") {
+        expiryDuration = 1 * 60 * 1000; // 1 minute
+      }
+
+      const expiresAt = new Date(Date.now() + expiryDuration);
 
       const reservation = await tx.reservation.create({
         data: {
