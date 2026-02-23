@@ -1,42 +1,11 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { calculateDistance } = require("../utils/distance");
+const deliveryQueue = require("../queues/deliveryQueue");
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.post("/deduct", async (req, res) => {
-  const { itemName, quantity } = req.body;
-
-  if (!itemName || !quantity) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
-
-  try {
-    await prisma.$transaction(async (tx) => {
-
-      const updated = await tx.inventory.updateMany({
-        where: {
-          itemName,
-          quantity: { gte: quantity },
-        },
-        data: {
-          quantity: { decrement: quantity },
-        },
-      });
-
-      if (updated.count === 0) {
-        throw new Error("Insufficient stock or concurrent update");
-      }
-
-    });
-
-    res.json({ message: "Stock deducted safely (atomic)" });
-
-  } catch (err) {
-    res.status(409).json({ error: err.message });
-  }
-});
 
 // GET /inventory/suppliers/nearest
 router.get("/suppliers/nearest", async (req, res) => {
@@ -96,7 +65,7 @@ router.post("/reserve", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const reservation = await prisma.$transaction(async (tx) => {
 
       const updated = await tx.inventory.updateMany({
         where: {
@@ -116,9 +85,9 @@ router.post("/reserve", async (req, res) => {
       let expiryDuration;
 
       if (requestType === "PICKUP") {
-        expiryDuration = 15 * 60 * 1000; // 15 minutes
+        expiryDuration = 15 * 60 * 1000;
       } else if (requestType === "DELIVERY") {
-        expiryDuration = 1 * 60 * 1000; // 1 minute
+        expiryDuration = 1 * 60 * 1000;
       }
 
       const expiresAt = new Date(Date.now() + expiryDuration);
@@ -137,9 +106,27 @@ router.post("/reserve", async (req, res) => {
       return reservation;
     });
 
+    // 🔵 ADD THIS BLOCK (outside transaction)
+    if (requestType === "DELIVERY") {
+      await deliveryQueue.add(
+        "autoConfirmDelivery",
+        { reservationId: reservation.id },
+        {
+          delay: 60 * 1000, // 1 minute
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 5000,
+          },
+          removeOnComplete: true,
+          removeOnFail: false,
+        }
+      );
+    }
+
     res.json({
       message: "Reservation successful",
-      reservation: result,
+      reservation,
     });
 
   } catch (error) {
@@ -147,6 +134,72 @@ router.post("/reserve", async (req, res) => {
   }
 });
 
+router.post("/cancel/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const reservation = await tx.reservation.findUnique({
+        where: { id },
+      });
+
+      if (!reservation) {
+        throw new Error("Reservation not found");
+      }
+
+      if (reservation.status !== "RESERVED") {
+        throw new Error("Only RESERVED orders can be cancelled");
+      }
+
+      // 🔵 DELIVERY → 1 minute cancellation window
+      if (reservation.type === "DELIVERY") {
+        const now = Date.now();
+        const createdTime = new Date(reservation.createdAt).getTime();
+
+        const oneMinutePassed = now - createdTime > 60 * 1000;
+
+        if (oneMinutePassed) {
+          throw new Error("Cancellation window expired for delivery");
+        }
+      }
+
+      // 🟢 PICKUP → no manual time restriction (worker handles expiry)
+
+      // Restore inventory
+      const inventory = await tx.inventory.findFirst({
+        where: {
+          supplierId: reservation.supplierId,
+          itemName: reservation.itemName,
+        },
+      });
+
+      if (!inventory) {
+        throw new Error("Inventory not found");
+      }
+
+      await tx.inventory.update({
+        where: { id: inventory.id },
+        data: {
+          quantity: inventory.quantity + reservation.quantity,
+        },
+      });
+
+      // Update reservation status
+      await tx.reservation.update({
+        where: { id },
+        data: {
+          status: "CANCELLED",
+        },
+      });
+
+      return { message: "Reservation cancelled successfully" };
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 router.get("/test-db", async (req, res) => {
   try {

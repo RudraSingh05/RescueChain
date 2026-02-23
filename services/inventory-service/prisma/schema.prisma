@@ -8,13 +8,13 @@ generator client {
 }
 
 model Supplier {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   name      String
   type      SupplierType
   latitude  Float
   longitude Float
   inventory Inventory[]
-  createdAt DateTime @default(now())
+  createdAt DateTime     @default(now())
 }
 
 model Inventory {
@@ -31,14 +31,26 @@ model Inventory {
 }
 
 model Reservation {
-  id         String   @id @default(uuid())
+  id         String            @id @default(uuid())
   itemName   String
   quantity   Int
   supplierId String
   type       RequestType
   status     ReservationStatus
   expiresAt  DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime          @default(now())
+
+  delivery Delivery?
+}
+
+model Delivery {
+  id            String   @id @default(uuid())
+  reservationId String   @unique
+  supplierId    String
+  status        String
+  startedAt     DateTime
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
 }
 
 enum SupplierType {
