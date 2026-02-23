@@ -1,82 +1,34 @@
-# =========================
-# macOS system files
-# =========================
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
-.Spotlight-V100
-.Trashes
-
-# =========================
-# Node.js
-# =========================
+# Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# =========================
-# Environment variables
-# =========================
+# Env
 .env
 .env.local
 .env.development
-.env.test
 .env.production
 
-# =========================
-# Build outputs
-# =========================
-dist/
-build/
-out/
-
-# =========================
-# Vite
-# =========================
-.vite/
-
-# =========================
-# Next.js
-# =========================
-.next/
-
-# =========================
 # Logs
-# =========================
-logs/
+logs
 *.log
 
-# =========================
-# Coverage / Testing
-# =========================
-coverage/
-.nyc_output/
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
 
-# =========================
-# IDE / Editor
-# =========================
+# OS (Mac + Windows)
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+
+# IDE
 .vscode/
 .idea/
-*.swp
 
-# =========================
-# OS / Temp files
-# =========================
-*.tmp
-*.temp
-*.bak
-
-# =========================
-# Docker (optional)
-# =========================
-*.pid
-*.seed
-
-# =========================
-# Database / Secrets
-# =========================
-*.sqlite
-*.db
+# Coverage
+coverage/
