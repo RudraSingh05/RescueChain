@@ -5,7 +5,10 @@ const { generateToken } = require("../utils/jwt");
 const prisma = new PrismaClient();
 
 async function register({ name, email, password }) {
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findUnique({
+    where: { email }
+  });
+
   if (existingUser) {
     throw new Error("User already exists");
   }
@@ -16,25 +19,36 @@ async function register({ name, email, password }) {
     data: {
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: "USER"
     }
   });
 
-  return generateToken(user);
+  return generateToken({
+    id: user.id,
+    role: user.role
+  });
 }
 
 async function login({ email, password }) {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email }
+  });
+
   if (!user) {
     throw new Error("Invalid credentials");
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
+
   if (!isMatch) {
     throw new Error("Invalid credentials");
   }
 
-  return generateToken(user);
+  return generateToken({
+    id: user.id,
+    role: user.role
+  });
 }
 
 module.exports = { register, login };

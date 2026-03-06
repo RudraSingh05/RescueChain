@@ -59,9 +59,9 @@ router.get("/suppliers/nearest", async (req, res) => {
 // POST /inventory/reserve
 router.post("/reserve", async (req, res) => {
   try {
-    const { supplierId, itemName, quantity, requestType } = req.body;
+    const { supplierId, itemName, quantity, requestType, userId } = req.body;
 
-    if (!supplierId || !itemName || !quantity || !requestType) {
+    if (!supplierId || !itemName || !quantity || !requestType || !userId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -95,6 +95,7 @@ router.post("/reserve", async (req, res) => {
       const reservation = await tx.reservation.create({
         data: {
           supplierId,
+          userId,
           itemName,
           quantity,
           type: requestType,
