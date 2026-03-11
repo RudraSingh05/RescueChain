@@ -4,12 +4,11 @@ function generateToken(user) {
   return jwt.sign(
     {
       userId: user.id,
-      role: user.role
+      role: user.role,
+      name: user.name
     },
     process.env.JWT_SECRET,
-    {
-      expiresIn: "15m"
-    }
+    { expiresIn: "15m" }
   );
 }
 
