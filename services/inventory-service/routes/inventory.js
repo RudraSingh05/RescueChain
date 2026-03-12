@@ -2,6 +2,8 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { calculateDistance } = require("../utils/distance");
 const deliveryQueue = require("../queues/deliveryQueue");
+const { authenticate } = require("../middleware/auth.middleware");
+
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -199,6 +201,26 @@ router.post("/cancel/:id", async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.get("/my", authenticate, async (req, res) => {
+
+  try {
+
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        userId: req.user.id
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    res.json(reservations);
+
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch reservations" });
   }
 });
 
