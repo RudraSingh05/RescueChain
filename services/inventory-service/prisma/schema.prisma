@@ -13,6 +13,7 @@ model Supplier {
   type      SupplierType
   latitude  Float
   longitude Float
+  userId    String      @unique
   inventory Inventory[]
   createdAt DateTime     @default(now())
 }

@@ -2,30 +2,29 @@ import DashboardLayout from "../layout/DashboardLayout";
 
 export default function SupplierDashboard() {
 
-    return (
+  return (
 
-        <DashboardLayout>
+    <DashboardLayout>
 
-            <h1>Supplier Control Panel</h1>
+      <h1>Supplier Dashboard</h1>
 
-            <div className="cards">
+      <div className="cards">
 
-                <div className="card">
-                    Add Inventory
-                </div>
+        <div className="card">
+          Manage Inventory
+        </div>
 
-                <div className="card">
-                    Update Stock
-                </div>
+        <div className="card">
+          Update Stock
+        </div>
 
-                <div className="card">
-                    View Reservations
-                </div>
+        <div className="card">
+          View Reservations
+        </div>
 
-            </div>
+      </div>
 
-        </DashboardLayout>
+    </DashboardLayout>
 
-    )
-
+  );
 }
