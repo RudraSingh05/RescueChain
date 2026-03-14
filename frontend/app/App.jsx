@@ -7,12 +7,11 @@ import UserDashboard from "../src/dashboards/UserDashboard";
 import SupplierDashboard from "../src/dashboards/SupplierDashboard";
 
 import FindSuppliers from "../src/user/FindSuppliers";
-// import ReserveResource from "../src/user/ReserveResource";
 import MyReservations from "../src/user/MyReservations";
 
-// import AddInventory from "../src/supplier/AddInventory";
-// import UpdateStock from "../src/supplier/UpdateStock";
-// import SupplierReservations from "../src/supplier/SupplierReservations";
+import AddInventory from "../src/supplier/AddInventory";
+import UpdateStock from "../src/supplier/UpdateStock";
+import SupplierReservations from "../src/supplier/SupplierReservations";
 
 import ProtectedRoute from "../src/components/ProtectedRoute";
 import RoleRoute from "../src/components/RoleRoute";
@@ -58,15 +57,6 @@ function App() {
           }
         />
 
-        {/* <Route
-          path="/reserve"
-          element={
-            <ProtectedRoute>
-              <ReserveResource />
-            </ProtectedRoute>
-          }
-        /> */}
-
         <Route
           path="/my-reservations"
           element={
@@ -76,7 +66,7 @@ function App() {
           }
         />
 
-        {/* <Route
+        <Route
           path="/inventory"
           element={
             <ProtectedRoute>
@@ -85,9 +75,9 @@ function App() {
               </RoleRoute>
             </ProtectedRoute>
           }
-        /> */}
+        />
 
-        {/* <Route
+        <Route
           path="/update-stock"
           element={
             <ProtectedRoute>
@@ -96,9 +86,9 @@ function App() {
               </RoleRoute>
             </ProtectedRoute>
           }
-        /> */}
+        />
 
-        {/* <Route
+        <Route
           path="/supplier-reservations"
           element={
             <ProtectedRoute>
@@ -107,7 +97,7 @@ function App() {
               </RoleRoute>
             </ProtectedRoute>
           }
-        />  */}
+        /> 
 
       </Routes>
 
