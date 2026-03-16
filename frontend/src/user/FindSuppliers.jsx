@@ -32,11 +32,9 @@ export default function FindSuppliers() {
                     longitude
                 }
             });
-
             setSuppliers(res.data);
-
         } catch (error) {
-            alert("Failed to fetch suppliers");
+            alert(error.response?.data?.error || "Failed to fetch suppliers");
         } finally {
             setLoading(false);
         }
@@ -44,7 +42,6 @@ export default function FindSuppliers() {
 
     const handleReserve = async () => {
         try {
-
             await inventoryAPI.post("/reserve", {
                 supplierId: selectedSupplier.id,
                 itemName,
@@ -61,7 +58,6 @@ export default function FindSuppliers() {
             });
             alert("Reservation successful");
             setShowModal(false);
-
         } catch (error) {
             alert(error.response?.data?.error || "Reservation failed");
         }
@@ -69,48 +65,17 @@ export default function FindSuppliers() {
 
     return (
         <DashboardLayout>
-
-            <h1>Find Nearest Suppliers</h1>
+            <h1 className="page-title">Find Nearest Suppliers</h1>
 
             <form onSubmit={handleSearch} className="search-form">
-
-                <input
-                    placeholder="Item Name (Oxygen, Blood, Medicine)"
-                    value={itemName}
-                    onChange={(e) => setItemName(e.target.value)}
-                    required
-                />
-
-                <input
-                    type="number"
-                    placeholder="Quantity"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    required
-                />
-
-                <input
-                    placeholder="Latitude"
-                    value={latitude}
-                    onChange={(e) => setLatitude(e.target.value)}
-                    required
-                />
-
-                <input
-                    placeholder="Longitude"
-                    value={longitude}
-                    onChange={(e) => setLongitude(e.target.value)}
-                    required
-                />
-
-                <button type="submit">
-                    {loading ? "Searching..." : "Find Suppliers"}
-                </button>
-
+                <input className="search-input" placeholder="Item Name (Oxygen, Blood, Medicine)" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
+                <input className="search-input" type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+                <input className="search-input" placeholder="Latitude" value={latitude} onChange={(e) => setLatitude(e.target.value)} required />
+                <input className="search-input" placeholder="Longitude" value={longitude} onChange={(e) => setLongitude(e.target.value)} required />
+                <button className="search-btn" type="submit">{loading ? "Searching..." : "Find Suppliers"}</button>
             </form>
 
             <table className="supplier-table">
-
                 <thead>
                     <tr>
                         <th>Supplier</th>
@@ -120,85 +85,39 @@ export default function FindSuppliers() {
                         <th>Reserve</th>
                     </tr>
                 </thead>
-
                 <tbody>
-
                     {suppliers.map((supplier) => (
-
                         <tr key={supplier.id}>
-
                             <td>{supplier.name}</td>
-
                             <td>{supplier.type}</td>
-
                             <td>{supplier.distance}</td>
-
                             <td>{supplier.availableQuantity}</td>
-
                             <td>
-                                <button
-                                    onClick={() => {
-                                        setSelectedSupplier(supplier);
-                                        setShowModal(true);
-                                    }}
-                                >
-                                    Reserve
-                                </button>
+                                <button className="table-reserve-btn" onClick={() => { setSelectedSupplier(supplier); setShowModal(true); }}>Reserve</button>
                             </td>
-
                         </tr>
-
                     ))}
-
                 </tbody>
-
             </table>
+
             {showModal && (
-
                 <div className="modal-overlay">
-
                     <div className="modal">
-
-                        <h3>Select Request Type</h3>
-
-                        <label>
-                            <input
-                                type="radio"
-                                name="requestType"
-                                value="PICKUP"
-                                checked={requestType === "PICKUP"}
-                                onChange={(e) => setRequestType(e.target.value)}
-                            />
+                        <h3 className="modal-title">Select Request Type</h3>
+                        <label className="modal-radio-label">
+                            <input type="radio" name="requestType" value="PICKUP" checked={requestType === "PICKUP"} onChange={(e) => setRequestType(e.target.value)} />
                             Pickup
                         </label>
-
-                        <label>
-                            <input
-                                type="radio"
-                                name="requestType"
-                                value="DELIVERY"
-                                checked={requestType === "DELIVERY"}
-                                onChange={(e) => setRequestType(e.target.value)}
-                            />
+                        <label className="modal-radio-label">
+                            <input type="radio" name="requestType" value="DELIVERY" checked={requestType === "DELIVERY"} onChange={(e) => setRequestType(e.target.value)} />
                             Delivery
                         </label>
-
                         <div className="modal-actions">
-
-                            <button onClick={handleReserve}>
-                                Confirm Reservation
-                            </button>
-
-                            <button onClick={() => setShowModal(false)}>
-                                Cancel
-                            </button>
-
+                            <button className="modal-confirm-btn" onClick={handleReserve}>Confirm Reservation</button>
+                            <button className="modal-cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
                         </div>
-
                     </div>
-
                 </div>
-
             )}
         </DashboardLayout>
     );

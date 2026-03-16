@@ -19,9 +19,6 @@ async function register({ name, email, password }) {
     data: {
       name,
       email,
-
-
-      
       password: hashedPassword,
       role: "USER"
     }

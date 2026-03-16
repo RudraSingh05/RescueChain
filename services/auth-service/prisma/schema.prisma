@@ -14,10 +14,38 @@ model User {
   password  String
   role      Role
   createdAt DateTime @default(now())
+
+  supplierApplication SupplierApplication?
 }
 
 enum Role {
   USER
   SUPPLIER
   ADMIN
+}
+
+model SupplierApplication {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  organizationName String
+  latitude         Float
+  longitude        Float
+  type             SupplierType
+  status           ApplicationStatus @default(PENDING)
+  createdAt        DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum SupplierType {
+  WAREHOUSE
+  PHARMACY
+  BLOOD_BANK
+  OXYGEN_SUPPLIER
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

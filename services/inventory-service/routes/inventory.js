@@ -2,7 +2,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { calculateDistance } = require("../utils/distance");
 const deliveryQueue = require("../queues/deliveryQueue");
-const { authenticate } = require("../middleware/auth.middleware");
+const { authenticate } = require("../middleware/inventory.middleware");
 
 
 const router = express.Router();
@@ -372,5 +372,36 @@ router.get("/supplier/reservations", authenticate, async (req, res) => {
   });
 
   res.json(reservations);
+
+});
+
+
+router.post("/supplier/create", async (req, res) => {
+
+  try {
+
+    const { userId, name, latitude, longitude, type } = req.body;
+
+    const supplier = await prisma.supplier.create({
+      data: {
+        userId,
+        name,
+        latitude,
+        longitude,
+        type
+      }
+    });
+
+    res.json({
+      message: "Supplier created",
+      supplier
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      error: error.message
+    });
+  }
 
 });
