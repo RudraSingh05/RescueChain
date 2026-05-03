@@ -1,0 +1,91 @@
+/* ===========================
+   ADD INVENTORY LAYOUT
+=========================== */
+.supplier-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.supplier-left {
+  flex: 1;
+}
+
+.supplier-right {
+  flex: 1;
+}
+
+
+/* admin page user status css */
+.status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.status.pending {
+  background: orange;
+}
+
+.status.approved {
+  background: green;
+  color: white;
+}
+
+.status.rejected {
+  background: red;
+  color: white;
+}
+
+/* ===========================
+   USERS TABLE ACTIONS
+=========================== */
+.table-block-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #d97706;
+  color: #fff;
+  transition: background-color 0.2s;
+  margin-right: 0.5rem;
+}
+
+.table-block-btn:hover {
+  background-color: #b45309;
+}
+
+.table-unblock-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #16a34a;
+  color: #fff;
+  transition: background-color 0.2s;
+  margin-right: 0.5rem;
+}
+
+.table-unblock-btn:hover {
+  background-color: #15803d;
+}
+
+.table-delete-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #dc2626;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+.table-delete-btn:hover {
+  background-color: #b91c1c;
+}

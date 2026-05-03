@@ -8,7 +8,7 @@ export default function MyReservations() {
 
   const fetchReservations = async () => {
     try {
-      const res = await inventoryAPI.get("/my");
+      const res = await inventoryAPI.get("/user/my");
       setReservations(res.data);
     } catch (error) {
       alert("Failed to fetch reservations");

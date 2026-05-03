@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { authAPI } from "../services/api";
 import useAuthStore from "../store/authStore";
@@ -48,6 +48,7 @@ export default function Login() {
             <input className="auth-input" type="password" placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             <button className="auth-btn" type="submit">Login</button>
           </form>
+          Register Here <Link to="/register">Register</Link>
         </div>
       </div>
     </>

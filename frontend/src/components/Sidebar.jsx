@@ -24,7 +24,13 @@ export default function Sidebar() {
       )}
       {role === "ADMIN" && (
         <>
-          <Link className="sidebar-link" to="/admin/supplier-applications">Supplier Applications</Link>
+          <Link className="sidebar-link" to="/dashboard/admin">Dashboard</Link>
+          <Link className="sidebar-link" to="/admin/supplier-applications">Supplier Approvals</Link>
+          <Link className="sidebar-link" to="/admin/logs">Activity Logs</Link>
+          <Link className="sidebar-link" to="/admin/users">Users</Link>
+          {/* <Link className="sidebar-link" to="/admin/suppliers">Suppliers</Link> */}
+          <Link className="sidebar-link" to="/admin/inventory">Inventory</Link>
+          {/* <Link className="sidebar-link" to="/admin/reservations">Reservations</Link> */}
         </>
       )}
     </div>

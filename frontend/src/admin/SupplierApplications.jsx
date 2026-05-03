@@ -4,6 +4,7 @@ import { authAPI } from "../services/api";
 
 export default function SupplierApplications() {
   const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchApplications = async () => {
     try {
@@ -18,14 +19,16 @@ export default function SupplierApplications() {
     fetchApplications();
   }, []);
 
+
   const approve = async (id) => {
+    setLoading(true);
     try {
       await authAPI.post(`/admin/supplier-approve/${id}`);
-      alert("Supplier approved");
       fetchApplications();
-    } catch (error) {
+    } catch {
       alert("Approval failed");
     }
+    setLoading(false);
   };
 
   const reject = async (id) => {
@@ -56,9 +59,19 @@ export default function SupplierApplications() {
             <tr key={app.id}>
               <td>{app.organizationName}</td>
               <td>{app.type}</td>
-              <td>{app.status}</td>
               <td>
-                <button className="table-approve-btn" onClick={() => approve(app.id)}>Approve</button>
+                <span className={`status ${app.status.toLowerCase()}`}>
+                  {app.status}
+                </span>
+              </td>
+              <td>
+                <button
+                  disabled={loading}
+                  className="table-approve-btn"
+                  onClick={() => approve(app.id)}
+                >
+                  {loading ? "Processing..." : "Approve"}
+                </button>
               </td>
               <td>
                 <button className="table-reject-btn" onClick={() => reject(app.id)}>Reject</button>

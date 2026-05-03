@@ -4,12 +4,10 @@ const { calculateDistance } = require("../utils/distance");
 const deliveryQueue = require("../queues/deliveryQueue");
 const { authenticate } = require("../middleware/inventory.middleware");
 
-
 const router = express.Router();
 const prisma = new PrismaClient();
 
 
-// GET /inventory/suppliers/nearest
 router.get("/suppliers/nearest", async (req, res) => {
   try {
     const { itemName, quantity, latitude, longitude } = req.query;
@@ -45,6 +43,8 @@ router.get("/suppliers/nearest", async (req, res) => {
           type: supplier.type,
           distance,
           availableQuantity: item.quantity,
+          latitude: supplier.latitude,
+          longitude: supplier.longitude
         });
       }
     });
@@ -58,7 +58,6 @@ router.get("/suppliers/nearest", async (req, res) => {
   }
 });
 
-// POST /inventory/reserve
 router.post("/reserve", authenticate, async (req, res) => {
   try {
 
@@ -225,183 +224,5 @@ router.get("/my", authenticate, async (req, res) => {
   }
 });
 
-router.get("/test-db", async (req, res) => {
-  try {
-    const items = await prisma.inventory.findMany();
-    res.json({
-      success: true,
-      count: items.length,
-      data: items
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
 
 module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-router.post("/inventory/add", authenticate, async (req, res) => {
-  try {
-
-    const { itemName, quantity } = req.body;
-
-    const supplier = await prisma.supplier.findFirst({
-      where: { userId: req.user.userId }
-    });
-
-    if (!supplier) {
-      return res.status(404).json({ error: "Supplier not found" });
-    }
-
-    const inventory = await prisma.inventory.create({
-      data: {
-        itemName,
-        quantity: parseInt(quantity),
-        supplierId: supplier.id
-      }
-    });
-
-    res.json(inventory);
-
-  } catch (error) {
-
-    if (error.code === "P2002") {
-      return res.status(400).json({
-        error: "Item already exists. Use update stock."
-      });
-    }
-
-    res.status(500).json({ error: "Inventory creation failed" });
-  }
-});
-
-
-
-
-router.patch("/inventory/update", authenticate, async (req, res) => {
-
-  const { itemName, quantity } = req.body;
-
-  const supplier = await prisma.supplier.findFirst({
-    where: { userId: req.user.userId }
-  });
-
-  if (!supplier) {
-    return res.status(404).json({ error: "Supplier not found" });
-  }
-
-  const updated = await prisma.inventory.update({
-    where: {
-      supplierId_itemName: {
-        supplierId: supplier.id,
-        itemName
-      }
-    },
-    data: {
-      quantity: parseInt(quantity)
-    }
-  });
-
-  res.json(updated);
-
-});
-
-
-
-
-
-router.get("/inventory/my", authenticate, async (req, res) => {
-
-  const supplier = await prisma.supplier.findFirst({
-    where: {
-      userId: req.user.userId
-    }
-  });
-
-  if (!supplier) {
-    return res.status(404).json({ error: "Supplier not found" });
-  }
-
-  const inventory = await prisma.inventory.findMany({
-    where: {
-      supplierId: supplier.id
-    }
-  });
-
-  res.json(inventory);
-
-});
-
-
-
-
-
-router.get("/supplier/reservations", authenticate, async (req, res) => {
-
-  const supplier = await prisma.supplier.findFirst({
-    where: { userId: req.user.userId }
-  });
-
-  if (!supplier) {
-    return res.status(404).json({ error: "Supplier not found" });
-  }
-
-  const reservations = await prisma.reservation.findMany({
-    where: {
-      supplierId: supplier.id
-    },
-    orderBy: {
-      createdAt: "desc"
-    }
-  });
-
-  res.json(reservations);
-
-});
-
-
-router.post("/supplier/create", async (req, res) => {
-
-  try {
-
-    const { userId, name, latitude, longitude, type } = req.body;
-
-    const supplier = await prisma.supplier.create({
-      data: {
-        userId,
-        name,
-        latitude,
-        longitude,
-        type
-      }
-    });
-
-    res.json({
-      message: "Supplier created",
-      supplier
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-      error: error.message
-    });
-  }
-
-});
