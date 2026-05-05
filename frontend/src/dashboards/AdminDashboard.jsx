@@ -23,9 +23,9 @@ export default function AdminDashboard() {
     <DashboardLayout>
       <h1 className="page-title">Admin Dashboard</h1>
       <div className="cards">
-        <div className="card">Total Users : {stats.users}</div>
-        <div className="card">Total Suppliers : {stats.suppliers}</div>
-        <div className="card">Pending Applications : {stats.pending}</div>
+        <div className="card cards">Total Users : {stats.users}</div>
+        <div className="card cards">Total Suppliers : {stats.suppliers}</div>
+        <div className="card cards">Pending Applications : {stats.pending}</div>
         <div className="cards">
           <Link to="/admin/supplier-applications">
             <div className="card action-card">Manage Supplier Applications</div>

@@ -16,7 +16,7 @@ export default function UpdateStock() {
   };
 
   const updateStock = async (itemName, quantity) => {
-    await inventoryAPI.patch("/update", {
+    await inventoryAPI.patch("/supplier/update", {
       itemName,
       quantity
     });
