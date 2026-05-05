@@ -3,54 +3,79 @@ import DashboardLayout from "../layout/DashboardLayout";
 import { inventoryAPI } from "../services/api";
 
 export default function UpdateStock() {
-
   const [inventory, setInventory] = useState([]);
+  const [updateValues, setUpdateValues] = useState({});
 
   useEffect(() => {
     fetchInventory();
   }, []);
 
   const fetchInventory = async () => {
-
-    const res = await inventoryAPI.get("/inventory/my");
-
+    const res = await inventoryAPI.get("/supplier/my");
     setInventory(res.data);
   };
 
   const updateStock = async (itemName, quantity) => {
-
-    await inventoryAPI.patch("/inventory/update", {
+    await inventoryAPI.patch("/supplier/update", {
       itemName,
       quantity
     });
 
+    setUpdateValues((prev) => ({
+      ...prev,
+      [itemName]: ""
+    }));
+     alert("Inventory Updated");
+
     fetchInventory();
   };
 
+  const handleInputChange = (itemName, value) => {
+    setUpdateValues({
+      ...updateValues,
+      [itemName]: value
+    });
+  };
+
   return (
-
     <DashboardLayout>
+      <h1 className="page-title">Update Stock</h1>
+      <div className="cards">
+        {inventory.map((item) => (
+          <div key={item.id} className="card">
 
-      <h1>Update Stock</h1>
+            <p className="card-item-name">{item.itemName}</p>
 
-      {inventory.map((item) => (
+            <p className="card-item-qty">
+              Current Quantity: {item.quantity}
+            </p>
 
-        <div key={item.id} className="card">
+            <input
+              type="number"
+              className="form-input"
+              placeholder="Add quantity"
+              value={updateValues[item.itemName] || ""}
+              onChange={(e) =>
+                handleInputChange(item.itemName, e.target.value)
+              }
+            />
 
-          <p>{item.itemName}</p>
-          <p>Quantity: {item.quantity}</p>
+            <button
+              className="card-btn"
+              disabled={!updateValues[item.itemName]}
+              onClick={() =>
+                updateStock(
+                  item.itemName,
+                  item.quantity + Number(updateValues[item.itemName] || 0)
+                )
+              }
+            >
+              Update Stock
+            </button>
 
-          <button
-            onClick={() => updateStock(item.itemName, item.quantity + 10)}
-          >
-            Add 10
-          </button>
-
-        </div>
-
-      ))}
-
+          </div>
+        ))}
+      </div>
     </DashboardLayout>
-
   );
 }

@@ -13,11 +13,52 @@ model User {
   email     String   @unique
   password  String
   role      Role
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime @default(now())
+
+  supplierApplication SupplierApplication?
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
 }
 
 enum Role {
   USER
   SUPPLIER
   ADMIN
+}
+
+model SupplierApplication {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  organizationName String
+  latitude         Float
+  longitude        Float
+  type             SupplierType
+  status           ApplicationStatus @default(PENDING)
+  createdAt        DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum SupplierType {
+  WAREHOUSE
+  PHARMACY
+  BLOOD_BANK
+  OXYGEN_SUPPLIER
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String?
+  createdAt DateTime @default(now())
 }

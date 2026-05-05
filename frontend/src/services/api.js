@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const authAPI = axios.create({
-  baseURL: "http://localhost:5000/auth"
+  baseURL: "http://localhost:5000"
 });
 
 export const inventoryAPI = axios.create({
