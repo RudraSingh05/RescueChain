@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - auth-service
+      - inventory-service
+
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./services/auth-service/.env
+
+  inventory-service:
+    build: ./services/inventory-service
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./services/inventory-service/.env
