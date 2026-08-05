@@ -22,3 +22,15 @@ services:
       - "4000:4000"
     env_file:
       - ./services/inventory-service/.env
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
