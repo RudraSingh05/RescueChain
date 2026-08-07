@@ -9,7 +9,7 @@ const connection = new Redis(process.env.REDIS_URL || "redis://localhost:6379", 
 
 const worker = new Worker(
   "deliveryQueue",
-  async job => {
+  async (job) => {
     const { reservationId } = job.data;
 
     const reservation = await prisma.reservation.findUnique({
@@ -20,7 +20,7 @@ const worker = new Worker(
       return;
     }
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       await tx.reservation.update({
         where: { id: reservationId },
         data: { status: "COMPLETED" },
@@ -43,7 +43,7 @@ const worker = new Worker(
   { connection }
 );
 
-worker.on("completed", job => {
+worker.on("completed", (job) => {
   console.log(`Job ${job.id} completed`);
 });
 

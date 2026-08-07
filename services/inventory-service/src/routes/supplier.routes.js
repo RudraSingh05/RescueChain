@@ -5,14 +5,12 @@ const { authenticate } = require("../middleware/inventory.middleware");
 const router = express.Router();
 const prisma = new PrismaClient();
 
-
 router.post("/add", authenticate, async (req, res) => {
   try {
-
     const { itemName, quantity } = req.body;
 
     const supplier = await prisma.supplier.findFirst({
-      where: { userId: req.user.userId }
+      where: { userId: req.user.userId },
     });
 
     if (!supplier) {
@@ -23,17 +21,15 @@ router.post("/add", authenticate, async (req, res) => {
       data: {
         itemName,
         quantity: parseInt(quantity),
-        supplierId: supplier.id
-      }
+        supplierId: supplier.id,
+      },
     });
 
     res.json(inventory);
-
   } catch (error) {
-
     if (error.code === "P2002") {
       return res.status(400).json({
-        error: "Item already exists. Use update stock."
+        error: "Item already exists. Use update stock.",
       });
     }
 
@@ -41,13 +37,11 @@ router.post("/add", authenticate, async (req, res) => {
   }
 });
 
-
 router.patch("/update", authenticate, async (req, res) => {
-
   const { itemName, quantity } = req.body;
 
   const supplier = await prisma.supplier.findFirst({
-    where: { userId: req.user.userId }
+    where: { userId: req.user.userId },
   });
 
   if (!supplier) {
@@ -58,25 +52,22 @@ router.patch("/update", authenticate, async (req, res) => {
     where: {
       supplierId_itemName: {
         supplierId: supplier.id,
-        itemName
-      }
+        itemName,
+      },
     },
     data: {
-      quantity: parseInt(quantity)
-    }
+      quantity: parseInt(quantity),
+    },
   });
 
   res.json(updated);
-
 });
 
-
 router.get("/my", authenticate, async (req, res) => {
-
   const supplier = await prisma.supplier.findFirst({
     where: {
-      userId: req.user.userId
-    }
+      userId: req.user.userId,
+    },
   });
 
   if (!supplier) {
@@ -85,19 +76,16 @@ router.get("/my", authenticate, async (req, res) => {
 
   const inventory = await prisma.inventory.findMany({
     where: {
-      supplierId: supplier.id
-    }
+      supplierId: supplier.id,
+    },
   });
 
   res.json(inventory);
-
 });
 
-
 router.get("/reservations", authenticate, async (req, res) => {
-
   const supplier = await prisma.supplier.findFirst({
-    where: { userId: req.user.userId }
+    where: { userId: req.user.userId },
   });
 
   if (!supplier) {
@@ -106,15 +94,14 @@ router.get("/reservations", authenticate, async (req, res) => {
 
   const reservations = await prisma.reservation.findMany({
     where: {
-      supplierId: supplier.id
+      supplierId: supplier.id,
     },
     orderBy: {
-      createdAt: "desc"
-    }
+      createdAt: "desc",
+    },
   });
 
   res.json(reservations);
-
 });
 
 module.exports = router;

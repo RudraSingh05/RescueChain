@@ -7,7 +7,6 @@ const { authenticate } = require("../middleware/inventory.middleware");
 const router = express.Router();
 const prisma = new PrismaClient();
 
-
 router.get("/suppliers/nearest", async (req, res) => {
   try {
     const { itemName, quantity, latitude, longitude } = req.query;
@@ -24,9 +23,7 @@ router.get("/suppliers/nearest", async (req, res) => {
 
     suppliers.forEach((supplier) => {
       const item = supplier.inventory.find(
-        (inv) =>
-          inv.itemName === itemName &&
-          inv.quantity >= parseInt(quantity)
+        (inv) => inv.itemName === itemName && inv.quantity >= parseInt(quantity)
       );
 
       if (item) {
@@ -44,7 +41,7 @@ router.get("/suppliers/nearest", async (req, res) => {
           distance,
           availableQuantity: item.quantity,
           latitude: supplier.latitude,
-          longitude: supplier.longitude
+          longitude: supplier.longitude,
         });
       }
     });
@@ -60,7 +57,6 @@ router.get("/suppliers/nearest", async (req, res) => {
 
 router.post("/reserve", authenticate, async (req, res) => {
   try {
-
     const { supplierId, itemName, quantity, requestType } = req.body;
     const userId = req.user.userId;
 
@@ -69,7 +65,6 @@ router.post("/reserve", authenticate, async (req, res) => {
     }
 
     const reservation = await prisma.$transaction(async (tx) => {
-
       const updated = await tx.inventory.updateMany({
         where: {
           supplierId,
@@ -131,7 +126,6 @@ router.post("/reserve", authenticate, async (req, res) => {
       message: "Reservation successful",
       reservation,
     });
-
   } catch (error) {
     res.status(409).json({ error: error.message });
   }
@@ -207,22 +201,19 @@ router.post("/cancel/:id", async (req, res) => {
 router.get("/my", authenticate, async (req, res) => {
   console.log("Logged in user:", req.user);
   try {
-
     const reservations = await prisma.reservation.findMany({
       where: {
-        userId: req.user.userId
+        userId: req.user.userId,
       },
       orderBy: {
-        createdAt: "desc"
-      }
+        createdAt: "desc",
+      },
     });
 
     res.json(reservations);
-
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch reservations" });
   }
 });
-
 
 module.exports = router;

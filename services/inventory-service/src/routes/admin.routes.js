@@ -5,13 +5,12 @@ const { authenticate } = require("../middleware/inventory.middleware");
 const router = express.Router();
 const prisma = new PrismaClient();
 
-
 // CREATE SUPPLIER
 router.post("/supplier/create", authenticate, async (req, res) => {
   try {
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({
-        error: "Only admin can create suppliers"
+        error: "Only admin can create suppliers",
       });
     }
 
@@ -23,21 +22,20 @@ router.post("/supplier/create", authenticate, async (req, res) => {
         name,
         latitude,
         longitude,
-        type
-      }
+        type,
+      },
     });
 
     res.json({
       message: "Supplier created successfully",
-      supplier
+      supplier,
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
   }
 });
-
 
 router.get("/all", authenticate, async (req, res) => {
   try {
@@ -47,17 +45,15 @@ router.get("/all", authenticate, async (req, res) => {
 
     const data = await prisma.inventory.findMany({
       include: {
-        supplier: true
-      }
+        supplier: true,
+      },
     });
 
     res.json(data);
-
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch inventory" });
   }
 });
-
 
 router.get("/low-stock", authenticate, async (req, res) => {
   try {
@@ -66,16 +62,15 @@ router.get("/low-stock", authenticate, async (req, res) => {
     const lowStock = await prisma.inventory.findMany({
       where: {
         quantity: {
-          lte: threshold
-        }
+          lte: threshold,
+        },
       },
       include: {
-        supplier: true
-      }
+        supplier: true,
+      },
     });
 
     res.json(lowStock);
-
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch low stock" });
   }

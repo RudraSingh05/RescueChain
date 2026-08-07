@@ -3,21 +3,19 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function applySupplier(req, res) {
-
   try {
-
     const userId = req.user.userId;
 
     const { organizationName, type, latitude, longitude } = req.body;
 
     // Check if user already applied
     const existingApplication = await prisma.supplierApplication.findFirst({
-      where: { userId }
+      where: { userId },
     });
 
     if (existingApplication) {
       return res.status(400).json({
-        error: "You have already applied to become a supplier"
+        error: "You have already applied to become a supplier",
       });
     }
 
@@ -27,25 +25,21 @@ async function applySupplier(req, res) {
         organizationName,
         type,
         latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude)
-      }
+        longitude: parseFloat(longitude),
+      },
     });
 
     res.json({
       message: "Supplier application submitted",
-      application
+      application,
     });
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
-      error: "Supplier application failed"
+      error: "Supplier application failed",
     });
-
   }
-
 }
 
 module.exports = { applySupplier };

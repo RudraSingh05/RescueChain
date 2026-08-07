@@ -1,14 +1,29 @@
-FROM node:18
+# ---------- Builder ----------
+FROM node:20-bullseye-slim AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+RUN npm ci
 
 COPY . .
 
 RUN npx prisma generate
 
-EXPOSE 4000
+# ---------- Runtime ----------
+FROM node:20-bullseye-slim
 
-CMD ["npm", "start"]
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package*.json ./
+
+RUN npm ci --omit=dev
+
+COPY --from=builder /app .
+
+EXPOSE 5000
+
+CMD ["npm","start"]
