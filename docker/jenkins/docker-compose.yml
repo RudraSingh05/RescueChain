@@ -15,17 +15,21 @@ services:
       - jenkins
 
   rescuechain-agent:
-    image: jenkins/inbound-agent:latest
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+
     container_name: rescuechain-agent
     restart: unless-stopped
 
     environment:
       JENKINS_URL: http://jenkins:8080
       JENKINS_AGENT_NAME: rescuechain-agent
-      JENKINS_SECRET: 26643c92aaf1daf9e6a1666c822a1a87aecef98729957e448d54d28d1b137791
+      JENKINS_SECRET: ${JENKINS_AGENT_SECRET}
 
     volumes:
       - ./agents/rescuechain-agent:/home/jenkins/agent
+      - /var/run/docker.sock:/var/run/docker.sock
 
     networks:
       - jenkins
@@ -33,8 +37,8 @@ services:
     depends_on:
       - jenkins
 
-networks:
-  jenkins:
-
 volumes:
   jenkins_home:
+
+networks:
+  jenkins:

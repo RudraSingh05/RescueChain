@@ -38,3 +38,5 @@ coverage/
 
 
 docs
+
+docker/jenkins/agents/rescuechain-agent/
