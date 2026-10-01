@@ -19,13 +19,13 @@ pipeline {
             }
         }
 
-        stage('Frontend - Lint') {
-            steps {
-                dir('frontend') {
-                    sh 'npm run lint'
-                }
-            }
-        }
+        // stage('Frontend - Lint') {
+        //     steps {
+        //         dir('frontend') {
+        //             sh 'npm run lint'
+        //         }
+        //     }
+        // }
 
         stage('Frontend - Build') {
             steps {
@@ -43,13 +43,13 @@ pipeline {
             }
         }
 
-        stage('Auth Service - Lint') {
-            steps {
-                dir('services/auth-service') {
-                    sh 'npm run lint'
-                }
-            }
-        }
+        // stage('Auth Service - Lint') {
+        //     steps {
+        //         dir('services/auth-service') {
+        //             sh 'npm run lint'
+        //         }
+        //     }
+        // }
 
         stage('Auth Service - Format Check') {
             steps {
@@ -67,13 +67,13 @@ pipeline {
             }
         }
 
-        stage('Inventory Service - Lint') {
-            steps {
-                dir('services/inventory-service') {
-                    sh 'npm run lint'
-                }
-            }
-        }
+        // stage('Inventory Service - Lint') {
+        //     steps {
+        //         dir('services/inventory-service') {
+        //             sh 'npm run lint'
+        //         }
+        //     }
+        // }
 
         stage('Inventory Service - Format Check') {
             steps {

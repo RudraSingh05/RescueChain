@@ -6,9 +6,6 @@ export default function ActivityLogs() {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    fetchLogs();
-  }, []);
-
   const fetchLogs = async () => {
     try {
       const res = await authAPI.get("/admin/logs");
@@ -17,6 +14,9 @@ export default function ActivityLogs() {
       alert("Failed to load logs");
     }
   };
+
+  fetchLogs();
+}, []);
 
   return (
     <DashboardLayout>

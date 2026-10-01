@@ -7,11 +7,7 @@ export default function Inventory() {
     const [lowStock, setLowStock] = useState([]);
 
     useEffect(() => {
-        fetchInventory();
-        fetchLowStock();
-    }, []);
-
-    const fetchInventory = async () => {
+        const fetchInventory = async () => {
         try {
             const res = await authAPI.get("/admin/inventory");
             setInventory(res.data);
@@ -28,6 +24,10 @@ export default function Inventory() {
             alert("Failed to load low stock");
         }
     };
+    
+        fetchInventory();
+        fetchLowStock();
+    }, []);
 
     return (
         <DashboardLayout>

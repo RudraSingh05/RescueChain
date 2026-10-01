@@ -10,7 +10,7 @@ export default function SupplierApplications() {
     try {
       const res = await authAPI.get("/admin/supplier-applications");
       setApplications(res.data);
-    } catch (error) {
+    } catch {
       alert("Failed to fetch applications");
     }
   };
@@ -36,7 +36,7 @@ export default function SupplierApplications() {
       await authAPI.post(`/admin/supplier-reject/${id}`);
       alert("Supplier rejected");
       fetchApplications();
-    } catch (error) {
+    } catch {
       alert("Rejection failed");
     }
   };
