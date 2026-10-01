@@ -82,6 +82,39 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker Build - Frontend') {
+            steps {
+                sh '''
+                    docker build \
+                    -t rudrasingh05/rescuechain-frontend:${BUILD_NUMBER} \
+                    -t rudrasingh05/rescuechain-frontend:latest \
+                    ./frontend
+                '''
+            }
+        }
+
+        stage('Docker Build - Auth Service') {
+            steps {
+                sh '''
+                    docker build \
+                    -t rudrasingh05/rescuechain-auth-service:${BUILD_NUMBER} \
+                    -t rudrasingh05/rescuechain-auth-service:latest \
+                    ./services/auth-service
+                '''
+            }
+        }
+
+        stage('Docker Build - Inventory Service') {
+            steps {
+                sh '''
+                    docker build \
+                    -t rudrasingh05/rescuechain-inventory-service:${BUILD_NUMBER} \
+                    -t rudrasingh05/rescuechain-inventory-service:latest \
+                    ./services/inventory-service
+                '''
+            }
+        }
     }
 
     post {
