@@ -115,7 +115,37 @@ pipeline {
                 '''
             }
         }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKERHUB_TOKEN" | docker login \
+                            -u "$DOCKERHUB_USERNAME" \
+                            --password-stdin
+
+                        docker push "$DOCKERHUB_USERNAME/rescuechain-frontend:${BUILD_NUMBER}"
+                        docker push "$DOCKERHUB_USERNAME/rescuechain-frontend:latest"
+
+                        docker push "$DOCKERHUB_USERNAME/rescuechain-auth-service:${BUILD_NUMBER}"
+                        docker push "$DOCKERHUB_USERNAME/rescuechain-auth-service:latest"
+
+                        docker push "$DOCKERHUB_USERNAME/rescuechain-inventory-service:${BUILD_NUMBER}"
+                        docker push "$DOCKERHUB_USERNAME/rescuechain-inventory-service:latest"
+                    '''
+                }
+            }
+}
+
     }
+
+
 
     post {
         success {
