@@ -1,7 +1,7 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { calculateDistance } = require("../utils/distance");
-const deliveryQueue = require("../queues/deliveryQueue");
+const { getDeliveryQueue } = require("../queues/deliveryQueue");
 const { authenticate } = require("../middleware/inventory.middleware");
 
 const router = express.Router();
@@ -106,6 +106,8 @@ router.post("/reserve", authenticate, async (req, res) => {
     });
 
     if (requestType === "DELIVERY") {
+      const deliveryQueue = getDeliveryQueue();
+
       await deliveryQueue.add(
         "autoConfirmDelivery",
         { reservationId: reservation.id },

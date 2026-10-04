@@ -1,10 +1,23 @@
 const { Queue } = require("bullmq");
 const Redis = require("ioredis");
 
-const connection = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-  maxRetriesPerRequest: null,
-});
+let connection = null;
+let deliveryQueue = null;
 
-const deliveryQueue = new Queue("deliveryQueue", { connection });
+function getDeliveryQueue() {
+  if (!connection) {
+    connection = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+      maxRetriesPerRequest: null,
+    });
+  }
 
-module.exports = deliveryQueue;
+  if (!deliveryQueue) {
+    deliveryQueue = new Queue("deliveryQueue", {
+      connection,
+    });
+  }
+
+  return deliveryQueue;
+}
+
+module.exports = { getDeliveryQueue };
