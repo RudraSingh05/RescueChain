@@ -6,13 +6,13 @@ export default function SupplierReservations() {
   const [reservations, setReservations] = useState([]);
 
   useEffect(() => {
+    const fetchReservations = async () => {
+      const res = await inventoryAPI.get("/supplier/reservations");
+      setReservations(res.data);
+    };
+
     fetchReservations();
   }, []);
-
-  const fetchReservations = async () => {
-    const res = await inventoryAPI.get("/supplier/reservations");
-    setReservations(res.data);
-  };
 
   return (
     <DashboardLayout>

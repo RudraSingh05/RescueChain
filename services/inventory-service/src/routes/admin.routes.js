@@ -50,7 +50,7 @@ router.get("/all", authenticate, async (req, res) => {
     });
 
     res.json(data);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch inventory" });
   }
 });
@@ -71,7 +71,7 @@ router.get("/low-stock", authenticate, async (req, res) => {
     });
 
     res.json(lowStock);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch low stock" });
   }
 });

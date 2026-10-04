@@ -14,8 +14,8 @@ async function runTest() {
           quantity: 2,
           requestType: "DELIVERY",
         })
-        .then((res) => ({ success: true }))
-        .catch((err) => ({ success: false }))
+        .then(() => ({ success: true }))
+        .catch(() => ({ success: false }))
     );
   }
 

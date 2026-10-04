@@ -6,6 +6,7 @@ export default function SupplierApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Reusable refresh function for approve/reject
   const fetchApplications = async () => {
     try {
       const res = await authAPI.get("/admin/supplier-applications");
@@ -15,27 +16,38 @@ export default function SupplierApplications() {
     }
   };
 
+  // Initial page load
   useEffect(() => {
-    fetchApplications();
-  }, []);
+    const loadApplications = async () => {
+      try {
+        const res = await authAPI.get("/admin/supplier-applications");
+        setApplications(res.data);
+      } catch {
+        alert("Failed to fetch applications");
+      }
+    };
 
+    loadApplications();
+  }, []);
 
   const approve = async (id) => {
     setLoading(true);
+
     try {
       await authAPI.post(`/admin/supplier-approve/${id}`);
-      fetchApplications();
+      await fetchApplications();
     } catch {
       alert("Approval failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const reject = async (id) => {
     try {
       await authAPI.post(`/admin/supplier-reject/${id}`);
       alert("Supplier rejected");
-      fetchApplications();
+      await fetchApplications();
     } catch {
       alert("Rejection failed");
     }
@@ -44,6 +56,7 @@ export default function SupplierApplications() {
   return (
     <DashboardLayout>
       <h1 className="page-title">Supplier Applications</h1>
+
       <table className="supplier-table">
         <thead>
           <tr>
@@ -54,16 +67,19 @@ export default function SupplierApplications() {
             <th>Reject</th>
           </tr>
         </thead>
+
         <tbody>
           {applications.map((app) => (
             <tr key={app.id}>
               <td>{app.organizationName}</td>
               <td>{app.type}</td>
+
               <td>
                 <span className={`status ${app.status.toLowerCase()}`}>
                   {app.status}
                 </span>
               </td>
+
               <td>
                 <button
                   disabled={loading}
@@ -73,8 +89,14 @@ export default function SupplierApplications() {
                   {loading ? "Processing..." : "Approve"}
                 </button>
               </td>
+
               <td>
-                <button className="table-reject-btn" onClick={() => reject(app.id)}>Reject</button>
+                <button
+                  className="table-reject-btn"
+                  onClick={() => reject(app.id)}
+                >
+                  Reject
+                </button>
               </td>
             </tr>
           ))}

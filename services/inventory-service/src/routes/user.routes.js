@@ -211,7 +211,7 @@ router.get("/my", authenticate, async (req, res) => {
     });
 
     res.json(reservations);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch reservations" });
   }
 });

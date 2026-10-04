@@ -7,17 +7,17 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({});
 
   useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await authAPI.get("/admin/stats");
+        setStats(res.data);
+      } catch {
+        alert("Failed to load stats");
+      }
+    };
+
     fetchStats();
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      const res = await authAPI.get("/admin/stats");
-      setStats(res.data);
-    } catch {
-      alert("Failed to load stats");
-    }
-  };
 
   return (
     <DashboardLayout>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "../layout/DashboardLayout";
 import { authAPI } from "../services/api";
 
@@ -7,24 +7,55 @@ import {
   TileLayer,
   Marker,
   useMapEvents,
-  useMap
+  useMap,
 } from "react-leaflet";
 
-export default function ApplySupplier() {
+// Update map view when selected location changes
+function ChangeMapView({ latitude, longitude }) {
+  const map = useMap();
 
+  useEffect(() => {
+    map.setView([latitude, longitude], 17);
+  }, [map, latitude, longitude]);
+
+  return null;
+}
+
+// Allow user to click on map and select location
+function LocationMarker({
+  latitude,
+  longitude,
+  setLatitude,
+  setLongitude,
+}) {
+  useMapEvents({
+    click(e) {
+      setLatitude(e.latlng.lat);
+      setLongitude(e.latlng.lng);
+    },
+  });
+
+  if (latitude === null || longitude === null) {
+    return null;
+  }
+
+  return <Marker position={[latitude, longitude]} />;
+}
+
+export default function ApplySupplier() {
   const [form, setForm] = useState({
     organizationName: "",
-    type: ""
+    type: "",
   });
 
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   // Detect user location
@@ -33,48 +64,41 @@ export default function ApplySupplier() {
       alert("Geolocation not supported");
       return;
     }
-    navigator.geolocation.getCurrentPosition((position) => {
-      setLatitude(position.coords.latitude);
-      setLongitude(position.coords.longitude);
-    });
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+      },
+      (error) => {
+        console.error("Failed to detect location:", error);
+        alert("Unable to detect your location");
+      },
+    );
   };
 
-  // Update map view
-  function ChangeMapView({ center }) {
-    const map = useMap();
-    map.setView(center, 17);
-    return null;
-  }
-
-  // Click to set marker
-  function LocationMarker() {
-    useMapEvents({
-      click(e) {
-        setLatitude(e.latlng.lat);
-        setLongitude(e.latlng.lng);
-      }
-    });
-    if (!latitude || !longitude) return null;
-    return <Marker position={[latitude, longitude]} />;
-  }
-
   const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (latitude === null || longitude === null) {
+      alert("Please select your location on the map");
+      return;
+    }
+
     try {
-      e.preventDefault();
-      if (!latitude || !longitude) {
-        alert("Please select your location on the map");
-        return;
-      }
       await authAPI.post("/supplier/apply", {
         ...form,
         latitude,
-        longitude
+        longitude,
       });
+
       alert("Supplier application submitted");
+
       setForm({
         organizationName: "",
-        type: ""
+        type: "",
       });
+
       setLatitude(null);
       setLongitude(null);
     } catch (error) {
@@ -82,10 +106,8 @@ export default function ApplySupplier() {
     }
   };
 
-
   return (
     <DashboardLayout>
-
       <h1 className="page-title">Apply to Become Supplier</h1>
 
       <div className="side-by-side">
@@ -109,9 +131,14 @@ export default function ApplySupplier() {
           />
 
           <div className="form-btn-group">
-            <button type="button" className="form-btn-secondary" onClick={detectLocation}>
+            <button
+              type="button"
+              className="form-btn-secondary"
+              onClick={detectLocation}
+            >
               Use My Location
             </button>
+
             <button className="form-btn" type="submit">
               Apply
             </button>
@@ -125,20 +152,32 @@ export default function ApplySupplier() {
             style={{ height: "100%", width: "100%" }}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            {latitude && longitude && (
-              <ChangeMapView center={[latitude, longitude]} />
+
+            {latitude !== null && longitude !== null && (
+              <ChangeMapView
+                latitude={latitude}
+                longitude={longitude}
+              />
             )}
-            <LocationMarker />
+
+            <LocationMarker
+              latitude={latitude}
+              longitude={longitude}
+              setLatitude={setLatitude}
+              setLongitude={setLongitude}
+            />
           </MapContainer>
         </div>
       </div>
 
-      {/* {latitude && longitude && (
-            <p className="location-preview">
-                Selected Location: {latitude.toFixed(5)} , {longitude.toFixed(5)}
-            </p>
-        )} */}
-
+      {/* Location preview can be enabled later if needed */}
+      {/*
+      {latitude !== null && longitude !== null && (
+        <p className="location-preview">
+          Selected Location: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+        </p>
+      )}
+      */}
     </DashboardLayout>
   );
 }

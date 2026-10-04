@@ -218,7 +218,7 @@ async function blockUser(req, res) {
     });
 
     res.json({ message: "User blocked" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to block user" });
   }
 }
@@ -252,7 +252,7 @@ async function unblockUser(req, res) {
     });
 
     res.json({ message: "User unblocked" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to unblock user" });
   }
 }
@@ -285,7 +285,7 @@ async function deleteUser(req, res) {
     });
 
     res.json({ message: "User deleted" });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to delete user" });
   }
 }
@@ -318,7 +318,7 @@ async function getLowStock(req, res) {
     });
 
     res.json(response.data);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch low stock" });
   }
 }
