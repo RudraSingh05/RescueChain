@@ -11,6 +11,10 @@ pipeline {
             }
         }
 
+        // =========================
+        // Frontend CI
+        // =========================
+
         stage('Frontend - Install') {
             steps {
                 dir('frontend') {
@@ -35,6 +39,10 @@ pipeline {
             }
         }
 
+        // =========================
+        // Auth Service CI
+        // =========================
+
         stage('Auth Service - Install') {
             steps {
                 dir('services/auth-service') {
@@ -51,6 +59,14 @@ pipeline {
             }
         }
 
+        stage('Auth Service - Test') {
+            steps {
+                dir('services/auth-service') {
+                    sh 'npm test'
+                }
+            }
+        }
+
         stage('Auth Service - Format Check') {
             steps {
                 dir('services/auth-service') {
@@ -58,6 +74,10 @@ pipeline {
                 }
             }
         }
+
+        // =========================
+        // Inventory Service CI
+        // =========================
 
         stage('Inventory Service - Install') {
             steps {
@@ -75,6 +95,14 @@ pipeline {
             }
         }
 
+        stage('Inventory Service - Test') {
+            steps {
+                dir('services/inventory-service') {
+                    sh 'npm test'
+                }
+            }
+        }
+
         stage('Inventory Service - Format Check') {
             steps {
                 dir('services/inventory-service') {
@@ -82,6 +110,10 @@ pipeline {
                 }
             }
         }
+
+        // =========================
+        // Docker Build
+        // =========================
 
         stage('Docker Build - Frontend') {
             steps {
@@ -116,6 +148,10 @@ pipeline {
             }
         }
 
+        // =========================
+        // Docker Push
+        // =========================
+
         stage('Docker Push') {
             steps {
                 withCredentials([
@@ -141,11 +177,8 @@ pipeline {
                     '''
                 }
             }
-}
-
+        }
     }
-
-
 
     post {
         success {
