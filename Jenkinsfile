@@ -11,9 +11,7 @@ pipeline {
             }
         }
 
-        // =========================
         // Frontend CI
-        // =========================
 
         stage('Frontend - Install') {
             steps {
@@ -39,9 +37,7 @@ pipeline {
             }
         }
 
-        // =========================
         // Auth Service CI
-        // =========================
 
         stage('Auth Service - Install') {
             steps {
@@ -75,9 +71,7 @@ pipeline {
             }
         }
 
-        // =========================
         // Inventory Service CI
-        // =========================
 
         stage('Inventory Service - Install') {
             steps {
@@ -111,9 +105,27 @@ pipeline {
             }
         }
 
-        // =========================
+        // SonarQube Analysis
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQube-Scanner'
+
+                    withSonarQubeEnv('RescueChain-SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=rescuechain \
+                                -Dsonar.projectName=RescueChain \
+                                -Dsonar.sources=frontend/src,services/auth-service/src,services/inventory-service/src \
+                                -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**
+                        """
+                    }
+                }
+            }
+        }
+
         // Docker Build
-        // =========================
 
         stage('Docker Build - Frontend') {
             steps {
@@ -148,9 +160,7 @@ pipeline {
             }
         }
 
-        // =========================
         // Docker Push
-        // =========================
 
         stage('Docker Push') {
             steps {
