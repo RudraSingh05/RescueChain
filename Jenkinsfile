@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'rescuechain-agent'
+        label 'rescuechain-docker'
     }
 
     stages {
