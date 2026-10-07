@@ -11,7 +11,9 @@ pipeline {
             }
         }
 
+        // =========================
         // Frontend CI
+        // =========================
 
         stage('Frontend - Install') {
             steps {
@@ -37,7 +39,9 @@ pipeline {
             }
         }
 
+        // =========================
         // Auth Service CI
+        // =========================
 
         stage('Auth Service - Install') {
             steps {
@@ -71,7 +75,9 @@ pipeline {
             }
         }
 
+        // =========================
         // Inventory Service CI
+        // =========================
 
         stage('Inventory Service - Install') {
             steps {
@@ -105,7 +111,9 @@ pipeline {
             }
         }
 
+        // =========================
         // SonarQube Analysis
+        // =========================
 
         stage('SonarQube Analysis') {
             steps {
@@ -125,7 +133,9 @@ pipeline {
             }
         }
 
-        // quality gate stage
+        // =========================
+        // SonarQube Quality Gate
+        // =========================
 
         stage('Quality Gate') {
             steps {
@@ -135,15 +145,17 @@ pipeline {
             }
         }
 
+        // =========================
         // Docker Build
+        // =========================
 
         stage('Docker Build - Frontend') {
             steps {
                 sh '''
                     docker build \
-                    -t rudrasingh05/rescuechain-frontend:${BUILD_NUMBER} \
-                    -t rudrasingh05/rescuechain-frontend:latest \
-                    ./frontend
+                        -t rudrasingh05/rescuechain-frontend:${BUILD_NUMBER} \
+                        -t rudrasingh05/rescuechain-frontend:latest \
+                        ./frontend
                 '''
             }
         }
@@ -152,9 +164,9 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                    -t rudrasingh05/rescuechain-auth-service:${BUILD_NUMBER} \
-                    -t rudrasingh05/rescuechain-auth-service:latest \
-                    ./services/auth-service
+                        -t rudrasingh05/rescuechain-auth-service:${BUILD_NUMBER} \
+                        -t rudrasingh05/rescuechain-auth-service:latest \
+                        ./services/auth-service
                 '''
             }
         }
@@ -163,14 +175,61 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                    -t rudrasingh05/rescuechain-inventory-service:${BUILD_NUMBER} \
-                    -t rudrasingh05/rescuechain-inventory-service:latest \
-                    ./services/inventory-service
+                        -t rudrasingh05/rescuechain-inventory-service:${BUILD_NUMBER} \
+                        -t rudrasingh05/rescuechain-inventory-service:latest \
+                        ./services/inventory-service
                 '''
             }
         }
 
+        // =========================
+        // Trivy Security Scan
+        // =========================
+
+        stage('Trivy Security Scan') {
+            steps {
+                sh '''
+                    echo "========================================"
+                    echo "Scanning Frontend image"
+                    echo "========================================"
+
+                    trivy image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --ignore-unfixed \
+                        --exit-code 1 \
+                        rudrasingh05/rescuechain-frontend:${BUILD_NUMBER}
+
+
+                    echo "========================================"
+                    echo "Scanning Auth Service image"
+                    echo "========================================"
+
+                    trivy image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --ignore-unfixed \
+                        --exit-code 1 \
+                        rudrasingh05/rescuechain-auth-service:${BUILD_NUMBER}
+
+
+                    echo "========================================"
+                    echo "Scanning Inventory Service image"
+                    echo "========================================"
+
+                    trivy image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --ignore-unfixed \
+                        --exit-code 1 \
+                        rudrasingh05/rescuechain-inventory-service:${BUILD_NUMBER}
+                '''
+            }
+        }
+
+        // =========================
         // Docker Push
+        // =========================
 
         stage('Docker Push') {
             steps {
