@@ -9,8 +9,8 @@ import {
   Empty,
   Loading,
   Notice,
-  readable,
 } from "../components/UI";
+import { readable } from "../utils/formatters";
 import { authAPI, errorMessage } from "../services/api";
 
 export default function Inventory() {

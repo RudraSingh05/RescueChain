@@ -9,8 +9,8 @@ import {
   Empty,
   Loading,
   Notice,
-  formatDate,
 } from "../components/UI";
+import { formatDate } from "../utils/formatters";
 import { authAPI, errorMessage } from "../services/api";
 
 export default function ActivityLogs() {
