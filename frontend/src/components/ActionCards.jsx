@@ -1,14 +1,22 @@
+
+import { createElement } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
+
 export default function ActionCards({ items }) {
   return (
     <div className="action-grid">
-      {items.map(({ to, title, description, icon: Icon }) => (
+      {items.map(({ to, title, description, icon }) => (
         <Link className="action-tile" to={to} key={to}>
           <span className="tile-icon">
-            <Icon size={21} strokeWidth={1.6} />
+            {createElement(icon, {
+              size: 21,
+              strokeWidth: 1.6,
+            })}
           </span>
+
           <ArrowUpRight className="tile-arrow" size={18} />
+
           <h3>{title}</h3>
           <p>{description}</p>
         </Link>

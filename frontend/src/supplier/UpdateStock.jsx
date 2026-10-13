@@ -1,8 +1,16 @@
+
 import { useEffect, useState } from "react";
 import { RefreshCw, Plus } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { PageHeader, Panel, Empty, Loading, Notice } from "../components/UI";
+import {
+  PageHeader,
+  Panel,
+  Empty,
+  Loading,
+  Notice,
+} from "../components/UI";
 import { inventoryAPI, errorMessage } from "../services/api";
+
 export default function UpdateStock() {
   const [items, setItems] = useState([]);
   const [values, setValues] = useState({});
@@ -10,8 +18,12 @@ export default function UpdateStock() {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Manual refresh and reload after stock update
   async function load() {
     setLoading(true);
+    setError("");
+
     try {
       const r = await inventoryAPI.get("/supplier/my");
       setItems(r.data);
@@ -21,25 +33,62 @@ export default function UpdateStock() {
       setLoading(false);
     }
   }
+
+  // Initial inventory fetch
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchInventory() {
+      try {
+        const r = await inventoryAPI.get("/supplier/my");
+
+        if (active) {
+          setItems(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load inventory"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchInventory();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // Add additional stock to an existing inventory item
   async function update(item) {
     const amount = Number(values[item.id]);
+
     if (!Number.isInteger(amount) || amount <= 0) {
       setError("Enter a positive whole-number quantity.");
       return;
     }
+
     setBusy(item.id);
     setError("");
     setSuccess("");
+
     try {
       await inventoryAPI.patch("/supplier/update", {
         itemName: item.itemName,
         quantity: Number(item.quantity) + amount,
       });
-      setValues((v) => ({ ...v, [item.id]: "" }));
+
+      setValues((v) => ({
+        ...v,
+        [item.id]: "",
+      }));
+
       setSuccess(`${item.itemName} updated.`);
+
       await load();
     } catch (e) {
       setError(errorMessage(e, "Unable to update stock"));
@@ -47,6 +96,7 @@ export default function UpdateStock() {
       setBusy(null);
     }
   }
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -54,13 +104,19 @@ export default function UpdateStock() {
         title="Update stock"
         description="Add received units to your currently available quantities."
         action={
-          <button className="btn btn-secondary" onClick={load}>
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading || busy !== null}
+          >
             <RefreshCw size={16} /> Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
       <Notice type="success">{success}</Notice>
+
       {loading ? (
         <Loading />
       ) : items.length ? (
@@ -75,6 +131,7 @@ export default function UpdateStock() {
                 {item.quantity}
                 <span>units available</span>
               </div>
+
               <label className="field">
                 <span>Additional units</span>
                 <input
@@ -83,14 +140,23 @@ export default function UpdateStock() {
                   type="number"
                   value={values[item.id] ?? ""}
                   placeholder="Enter quantity to add"
+                  disabled={busy !== null}
                   onChange={(e) =>
-                    setValues((v) => ({ ...v, [item.id]: e.target.value }))
+                    setValues((v) => ({
+                      ...v,
+                      [item.id]: e.target.value,
+                    }))
                   }
                 />
               </label>
+
               <button
                 className="btn btn-primary btn-full"
-                disabled={busy !== null || !values[item.id]}
+                disabled={
+                  busy !== null ||
+                  loading ||
+                  !values[item.id]
+                }
                 onClick={() => update(item)}
               >
                 <Plus size={16} />

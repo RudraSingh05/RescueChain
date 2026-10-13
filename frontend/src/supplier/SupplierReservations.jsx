@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -9,16 +10,20 @@ import {
   Empty,
   Loading,
   Notice,
-  readable,
 } from "../components/UI";
+import { readable } from "../utils/formatters";
 import { inventoryAPI, errorMessage } from "../services/api";
+
 export default function SupplierReservations() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Manual refresh
   async function load() {
     setLoading(true);
     setError("");
+
     try {
       const r = await inventoryAPI.get("/supplier/reservations");
       setRows(r.data);
@@ -28,9 +33,36 @@ export default function SupplierReservations() {
       setLoading(false);
     }
   }
+
+  // Initial reservations fetch
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchReservations() {
+      try {
+        const r = await inventoryAPI.get("/supplier/reservations");
+
+        if (active) {
+          setRows(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load reservations"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchReservations();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -38,13 +70,22 @@ export default function SupplierReservations() {
         title="Reservations"
         description="Review requests made against your available inventory."
         action={
-          <button className="btn btn-secondary" onClick={load}>
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading}
+          >
             <RefreshCw size={16} /> Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
-      <Panel title="Incoming requests" subtitle={`${rows.length} reservations`}>
+
+      <Panel
+        title="Incoming requests"
+        subtitle={`${rows.length} reservations`}
+      >
         {loading ? (
           <Loading />
         ) : rows.length ? (
@@ -57,6 +98,7 @@ export default function SupplierReservations() {
                 <th>Status</th>
               </tr>
             </thead>
+
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>

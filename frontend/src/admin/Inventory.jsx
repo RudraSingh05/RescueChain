@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -11,19 +12,24 @@ import {
   readable,
 } from "../components/UI";
 import { authAPI, errorMessage } from "../services/api";
+
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Manual refresh
   async function load() {
     setLoading(true);
     setError("");
+
     try {
       const [all, low] = await Promise.all([
         authAPI.get("/admin/inventory"),
         authAPI.get("/admin/inventory/low-stock"),
       ]);
+
       setInventory(all.data);
       setLowStock(low.data);
     } catch (e) {
@@ -32,9 +38,40 @@ export default function Inventory() {
       setLoading(false);
     }
   }
+
+  // Initial data fetch
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchInventory() {
+      try {
+        const [all, low] = await Promise.all([
+          authAPI.get("/admin/inventory"),
+          authAPI.get("/admin/inventory/low-stock"),
+        ]);
+
+        if (active) {
+          setInventory(all.data);
+          setLowStock(low.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load inventory"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchInventory();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -42,12 +79,18 @@ export default function Inventory() {
         title="Inventory oversight"
         description="Monitor supply availability and identify stock that needs attention."
         action={
-          <button className="btn btn-secondary" onClick={load}>
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading}
+          >
             <RefreshCw size={16} /> Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
+
       <div className="two-panels">
         <Panel
           title="Low stock alerts"
@@ -84,6 +127,7 @@ export default function Inventory() {
             />
           )}
         </Panel>
+
         <Panel title="All inventory" subtitle="Supplies across the network">
           {loading ? (
             <Loading />

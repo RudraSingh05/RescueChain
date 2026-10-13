@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -11,13 +12,17 @@ import {
   formatDate,
 } from "../components/UI";
 import { authAPI, errorMessage } from "../services/api";
+
 export default function ActivityLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Manual refresh
   const load = async () => {
     setLoading(true);
     setError("");
+
     try {
       const r = await authAPI.get("/admin/logs");
       setLogs(r.data);
@@ -27,9 +32,36 @@ export default function ActivityLogs() {
       setLoading(false);
     }
   };
+
+  // Initial fetch on mount
   useEffect(() => {
-    load();
+    let active = true;
+
+    const fetchLogs = async () => {
+      try {
+        const r = await authAPI.get("/admin/logs");
+
+        if (active) {
+          setLogs(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load activity"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchLogs();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -37,12 +69,19 @@ export default function ActivityLogs() {
         eyebrow="AUDIT TRAIL"
         description="Review recent actions across the network."
         action={
-          <button className="btn btn-secondary" onClick={load}>
-            <RefreshCw size={16} /> Refresh
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading}
+          >
+            <RefreshCw size={16} />
+            Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
+
       <Panel title="Recent activity" subtitle="Recorded network events">
         {loading ? (
           <Loading />

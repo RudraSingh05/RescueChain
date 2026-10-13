@@ -15,14 +15,14 @@ import {
   Empty,
   Loading,
   Notice,
-  readable,
 } from "../components/UI";
+import { readable } from "../utils/formatters";
 import {
   ChangeMapView,
   LocationMarker,
   FitRouteBounds,
-  supplierPin,
 } from "../components/MapTools";
+import { supplierPin } from "../utils/mapIcons";
 import { inventoryAPI, errorMessage } from "../services/api";
 import useAuthStore from "../store/authStore";
 export default function FindSuppliers() {
@@ -60,7 +60,22 @@ export default function FindSuppliers() {
     );
   }
   useEffect(() => {
-    detect(true);
+    if (!navigator.geolocation) return;
+
+    let active = true;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (!active) return;
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setRoute([]);
+      },
+      () => {}, // Silently fall back to selecting a point on the map.
+    );
+
+    return () => {
+      active = false;
+    };
   }, []);
   async function fetchRoute(a, b, c, d) {
     try {
@@ -208,7 +223,7 @@ export default function FindSuppliers() {
               className="leaflet-map"
             >
               <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
+                attribution="© OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {latitude != null && route.length === 0 && (

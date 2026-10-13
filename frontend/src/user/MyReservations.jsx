@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -9,17 +10,20 @@ import {
   Empty,
   Loading,
   Notice,
-  readable,
-  formatDate,
 } from "../components/UI";
+import { readable, formatDate } from "../utils/formatters";
 import { inventoryAPI, errorMessage } from "../services/api";
+
 export default function MyReservations() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Manual refresh
   async function load() {
     setLoading(true);
     setError("");
+
     try {
       const r = await inventoryAPI.get("/user/my");
       setRows(r.data);
@@ -29,9 +33,36 @@ export default function MyReservations() {
       setLoading(false);
     }
   }
+
+  // Initial reservations fetch
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchReservations() {
+      try {
+        const r = await inventoryAPI.get("/user/my");
+
+        if (active) {
+          setRows(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load reservations"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchReservations();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -39,12 +70,18 @@ export default function MyReservations() {
         title="My reservations"
         description="Keep track of reserved supplies and their fulfillment status."
         action={
-          <button className="btn btn-secondary" onClick={load}>
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading}
+          >
             <RefreshCw size={16} /> Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
+
       <Panel
         title="Reservation history"
         subtitle={`${rows.length} reservations`}
@@ -62,6 +99,7 @@ export default function MyReservations() {
                 <th>Expires at</th>
               </tr>
             </thead>
+
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>

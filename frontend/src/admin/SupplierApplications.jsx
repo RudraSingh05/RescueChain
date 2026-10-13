@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Check, X, RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -12,15 +13,19 @@ import {
   readable,
 } from "../components/UI";
 import { authAPI, errorMessage } from "../services/api";
+
 export default function SupplierApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Manual refresh and post-decision reload
   async function load() {
     setLoading(true);
     setError("");
+
     try {
       const r = await authAPI.get("/admin/supplier-applications");
       setApplications(r.data);
@@ -30,23 +35,56 @@ export default function SupplierApplications() {
       setLoading(false);
     }
   }
+
+  // Initial fetch on component mount
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchApplications() {
+      try {
+        const r = await authAPI.get("/admin/supplier-applications");
+
+        if (active) {
+          setApplications(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load applications"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchApplications();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // Approve or reject supplier application
   async function decide(id, action) {
     if (
       action === "reject" &&
       !window.confirm("Reject this supplier application?")
-    )
+    ) {
       return;
+    }
+
     setBusy(id);
     setError("");
     setSuccess("");
+
     try {
       await authAPI.post(`/admin/supplier-${action}/${id}`);
+
       setSuccess(
         `Application ${action === "approve" ? "approved" : "rejected"}.`,
       );
+
       await load();
     } catch (e) {
       setError(errorMessage(e, `Unable to ${action} application`));
@@ -54,6 +92,7 @@ export default function SupplierApplications() {
       setBusy(null);
     }
   }
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -61,13 +100,19 @@ export default function SupplierApplications() {
         title="Supplier applications"
         description="Review and manage organizations requesting access to the network."
         action={
-          <button className="btn btn-secondary" onClick={load}>
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading || busy !== null}
+          >
             <RefreshCw size={16} /> Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
       <Notice type="success">{success}</Notice>
+
       <Panel
         title="Applications"
         subtitle={`${applications.length} submitted applications`}
@@ -84,6 +129,7 @@ export default function SupplierApplications() {
                 <th className="right">Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {applications.map((a) => (
                 <tr key={a.id}>
@@ -98,14 +144,15 @@ export default function SupplierApplications() {
                         <>
                           <button
                             className="btn btn-small btn-primary"
-                            disabled={busy !== null}
+                            disabled={busy !== null || loading}
                             onClick={() => decide(a.id, "approve")}
                           >
                             <Check size={15} /> Approve
                           </button>
+
                           <button
                             className="btn btn-small btn-secondary"
-                            disabled={busy !== null}
+                            disabled={busy !== null || loading}
                             onClick={() => decide(a.id, "reject")}
                           >
                             <X size={15} /> Reject

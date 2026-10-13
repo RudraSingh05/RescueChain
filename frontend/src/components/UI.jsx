@@ -1,4 +1,10 @@
-import { AlertCircle, CheckCircle2, LoaderCircle, Inbox } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  LoaderCircle,
+  Inbox,
+} from "lucide-react";
+
 export function PageHeader({
   eyebrow = "WORKSPACE",
   title,
@@ -10,13 +16,23 @@ export function PageHeader({
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
-        {description && <p className="page-description">{description}</p>}
+        {description && (
+          <p className="page-description">{description}</p>
+        )}
       </div>
+
       {action && <div className="page-header-action">{action}</div>}
     </div>
   );
 }
-export function Panel({ title, subtitle, action, children, className = "" }) {
+
+export function Panel({
+  title,
+  subtitle,
+  action,
+  children,
+  className = "",
+}) {
   return (
     <section className={`panel ${className}`}>
       <div className="panel-header">
@@ -26,10 +42,12 @@ export function Panel({ title, subtitle, action, children, className = "" }) {
         </div>
         {action}
       </div>
+
       {children}
     </section>
   );
 }
+
 export function Notice({ type = "error", children }) {
   return children ? (
     <div
@@ -45,6 +63,7 @@ export function Notice({ type = "error", children }) {
     </div>
   ) : null;
 }
+
 export function Empty({
   title = "Nothing here yet",
   description = "Records will appear here when available.",
@@ -57,6 +76,7 @@ export function Empty({
     </div>
   );
 }
+
 export function Loading({ label = "Loading data" }) {
   return (
     <div className="loading" role="status">
@@ -65,32 +85,26 @@ export function Loading({ label = "Loading data" }) {
     </div>
   );
 }
+
 export function Status({ value }) {
   const v = String(value || "UNKNOWN");
+
   return (
     <span
-      className={`status status-${v.toLowerCase().replace(/[^a-z0-9]/g, "")}`}
+      className={`status status-${v
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")}`}
     >
       <span className="status-dot" />
       {v.replaceAll("_", " ")}
     </span>
   );
 }
+
 export function TableScroll({ children }) {
   return (
     <div className="table-scroll">
       <table className="data-table">{children}</table>
     </div>
   );
-}
-export function formatDate(value) {
-  return value
-    ? new Date(value).toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : "—";
-}
-export function readable(value) {
-  return String(value || "—").replaceAll("_", " ");
 }

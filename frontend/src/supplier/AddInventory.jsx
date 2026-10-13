@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -10,6 +11,7 @@ import {
   Notice,
 } from "../components/UI";
 import { inventoryAPI, errorMessage } from "../services/api";
+
 export default function AddInventory() {
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -18,8 +20,12 @@ export default function AddInventory() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Manual refresh and reload after adding inventory
   async function load() {
     setLoading(true);
+    setError("");
+
     try {
       const r = await inventoryAPI.get("/supplier/my");
       setItems(r.data);
@@ -29,26 +35,61 @@ export default function AddInventory() {
       setLoading(false);
     }
   }
+
+  // Initial inventory fetch
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchInventory() {
+      try {
+        const r = await inventoryAPI.get("/supplier/my");
+
+        if (active) {
+          setItems(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load inventory"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchInventory();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // Add new inventory item
   async function submit(e) {
     e.preventDefault();
-    if (!Number.isInteger(Number(quantity)) || Number(quantity) <= 0) {
+
+    const parsedQuantity = Number(quantity);
+
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0) {
       setError("Enter a positive whole-number quantity.");
       return;
     }
+
     setBusy(true);
     setError("");
     setSuccess("");
+
     try {
       await inventoryAPI.post("/supplier/add", {
         itemName: itemName.trim(),
-        quantity: Number(quantity),
+        quantity: parsedQuantity,
       });
+
       setItemName("");
       setQuantity("");
       setSuccess("Inventory added successfully.");
+
       await load();
     } catch (e) {
       setError(errorMessage(e, "Unable to add inventory"));
@@ -56,6 +97,7 @@ export default function AddInventory() {
       setBusy(false);
     }
   }
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -63,8 +105,10 @@ export default function AddInventory() {
         title="Manage inventory"
         description="Keep your available emergency supplies accurate and up to date."
       />
+
       <Notice>{error}</Notice>
       <Notice type="success">{success}</Notice>
+
       <div className="form-data-grid">
         <Panel
           title="Add a supply item"
@@ -80,6 +124,7 @@ export default function AddInventory() {
                 placeholder="e.g. Oxygen cylinder"
               />
             </label>
+
             <label className="field">
               <span>Quantity available</span>
               <input
@@ -92,12 +137,18 @@ export default function AddInventory() {
                 placeholder="Enter quantity"
               />
             </label>
-            <button className="btn btn-primary" type="submit" disabled={busy}>
+
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={busy || loading}
+            >
               <Plus size={17} />
               {busy ? "Adding item…" : "Add to inventory"}
             </button>
           </form>
         </Panel>
+
         <Panel
           title="Current inventory"
           subtitle={`${items.length} listed items`}
@@ -106,6 +157,7 @@ export default function AddInventory() {
               className="icon-btn"
               aria-label="Refresh inventory"
               onClick={load}
+              disabled={loading || busy}
             >
               <RefreshCw size={17} />
             </button>
@@ -121,6 +173,7 @@ export default function AddInventory() {
                   <th>Available quantity</th>
                 </tr>
               </thead>
+
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>

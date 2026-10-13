@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Ban, CheckCircle2, Trash2, RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
@@ -12,15 +13,19 @@ import {
   readable,
 } from "../components/UI";
 import { authAPI, errorMessage } from "../services/api";
+
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Manual refresh and reload after admin actions
   async function load() {
     setLoading(true);
     setError("");
+
     try {
       const r = await authAPI.get("/admin/users");
       setUsers(r.data);
@@ -30,25 +35,70 @@ export default function Users() {
       setLoading(false);
     }
   }
+
+  // Initial fetch on mount
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function fetchUsers() {
+      try {
+        const r = await authAPI.get("/admin/users");
+
+        if (active) {
+          setUsers(r.data);
+        }
+      } catch (e) {
+        if (active) {
+          setError(errorMessage(e, "Unable to load users"));
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchUsers();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // Block, unblock, or delete user
   async function act(user, action) {
-    if (
-      !window.confirm(
-        `${action === "delete" ? "Permanently delete" : action === "block" ? "Block" : "Unblock"} ${user.name}?`,
-      )
-    )
+    const message =
+      action === "delete"
+        ? "Permanently delete"
+        : action === "block"
+          ? "Block"
+          : "Unblock";
+
+    if (!window.confirm(`${message} ${user.name}?`)) {
       return;
+    }
+
     setBusy(user.id);
     setError("");
     setSuccess("");
+
     try {
-      if (action === "delete") await authAPI.delete(`/admin/users/${user.id}`);
-      else await authAPI.patch(`/admin/users/${user.id}/${action}`);
+      if (action === "delete") {
+        await authAPI.delete(`/admin/users/${user.id}`);
+      } else {
+        await authAPI.patch(`/admin/users/${user.id}/${action}`);
+      }
+
       setSuccess(
-        `User ${action === "delete" ? "deleted" : action === "block" ? "blocked" : "unblocked"}.`,
+        `User ${
+          action === "delete"
+            ? "deleted"
+            : action === "block"
+              ? "blocked"
+              : "unblocked"
+        }.`,
       );
+
       await load();
     } catch (e) {
       setError(errorMessage(e, "Unable to update user"));
@@ -56,6 +106,7 @@ export default function Users() {
       setBusy(null);
     }
   }
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -63,13 +114,19 @@ export default function Users() {
         title="User management"
         description="Manage network accounts, roles, and access status."
         action={
-          <button className="btn btn-secondary" onClick={load}>
+          <button
+            className="btn btn-secondary"
+            onClick={load}
+            disabled={loading || busy !== null}
+          >
             <RefreshCw size={16} /> Refresh
           </button>
         }
       />
+
       <Notice>{error}</Notice>
       <Notice type="success">{success}</Notice>
+
       <Panel
         title="Network users"
         subtitle={`${users.length} registered accounts`}
@@ -87,6 +144,7 @@ export default function Users() {
                 <th className="right">Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
@@ -100,7 +158,7 @@ export default function Users() {
                     <div className="table-actions">
                       <button
                         className="btn btn-small btn-secondary"
-                        disabled={busy !== null}
+                        disabled={busy !== null || loading}
                         onClick={() =>
                           act(
                             user,
@@ -115,9 +173,10 @@ export default function Users() {
                         )}{" "}
                         {user.status === "ACTIVE" ? "Block" : "Unblock"}
                       </button>
+
                       <button
                         className="btn btn-small btn-danger"
-                        disabled={busy !== null}
+                        disabled={busy !== null || loading}
                         onClick={() => act(user, "delete")}
                       >
                         <Trash2 size={15} /> Delete

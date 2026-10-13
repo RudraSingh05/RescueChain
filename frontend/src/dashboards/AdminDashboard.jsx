@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { createElement, useEffect, useState } from "react";
 import {
   Users,
   Building2,
@@ -13,15 +14,30 @@ import DashboardLayout from "../layout/DashboardLayout";
 import ActionCards from "../components/ActionCards";
 import { PageHeader, Notice } from "../components/UI";
 import { authAPI, errorMessage } from "../services/api";
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({});
   const [error, setError] = useState("");
+
   useEffect(() => {
+    let active = true;
+
     authAPI
       .get("/admin/stats")
-      .then((r) => setStats(r.data))
-      .catch((e) => setError(errorMessage(e, "Unable to load statistics")));
+      .then((r) => {
+        if (active) setStats(r.data);
+      })
+      .catch((e) => {
+        if (active) {
+          setError(errorMessage(e, "Unable to load statistics"));
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -29,31 +45,40 @@ export default function AdminDashboard() {
         title="Network overview"
         description="A clear view of people, suppliers, and pending approvals."
       />
+
       <Notice>{error}</Notice>
+
       <div className="stat-grid">
         {[
           [Users, "Total users", stats.users],
           [Building2, "Active suppliers", stats.suppliers],
           [Clock3, "Pending applications", stats.pending],
-        ].map(([Icon, label, value]) => (
+        ].map(([icon, label, value]) => (
           <div className="stat-card" key={label}>
             <span className="stat-icon">
-              <Icon size={21} />
+              {createElement(icon, { size: 21 })}
             </span>
+
             <span className="stat-label">{label}</span>
             <strong>{value ?? "—"}</strong>
           </div>
         ))}
       </div>
+
       <div className="section-heading">
         <div>
           <p className="eyebrow">MANAGEMENT</p>
           <h2>Network administration</h2>
         </div>
-        <Link className="text-link" to="/admin/supplier-applications">
+
+        <Link
+          className="text-link"
+          to="/admin/supplier-applications"
+        >
           Review applications <ArrowRight size={16} />
         </Link>
       </div>
+
       <ActionCards
         items={[
           {
