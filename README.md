@@ -13,7 +13,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?logo=jenkins&logoColor=white)](https://www.jenkins.io/)
 
-[Overview](#-overview) · [Architecture](#-architecture) · [Features](#-features) · [Quick Start](#-getting-started) · [API](#-api-overview) · [DevOps](#-devops--cicd) · [Roadmap](#-roadmap)
+[Overview](#-overview) · [Architecture](ARCHITECTURE.md) · [Features](#-features) · [Quick Start](#-getting-started) · [API](#-api-overview) · [DevOps](#-devops--cicd) · [Roadmap](#-roadmap)
 
 </div>
 
@@ -29,9 +29,9 @@ The system brings together three roles:
 - **Suppliers** manage stock and view incoming reservations.
 - **Administrators** review supplier applications, manage users, audit activity, and oversee inventory.
 
-The project also serves as a hands-on **DevOps engineering platform**, with containerized services and a progressively developed Jenkins CI/CD pipeline.
+The project also serves as a hands-on **DevOps engineering platform**, with containerized services, Jenkins continuous integration, and security quality gates.
 
-> **Project status:** Core application and Dockerized development environment are implemented. Jenkins-based CI is in progress; security scanning, automated deployment, notifications, and observability are roadmap items. This is a project demonstration, not a certified emergency-response service.
+> **Project status:** Core application and Dockerized development environment are implemented. Production readiness, Jenkins foundations, continuous integration, and the SonarQube/Trivy security phase are reported complete. Automated deployment, notifications, and monitoring remain planned. This is a project demonstration, not a certified emergency-response service.
 
 ## ✨ Features
 
@@ -71,34 +71,18 @@ flowchart TD
 
 ## 🏗️ Architecture
 
+RescueChain separates the React frontend, authentication/administration service, and inventory/reservation service. Each backend service uses its own PostgreSQL database; Redis supports asynchronous reservation processing.
+
 ```mermaid
-flowchart TB
-    U[User / Supplier / Admin] --> F[React + Vite frontend\nNginx container]
-    F -->|JWT / REST| A[Auth Service\nNode.js + Express :5000]
-    F -->|JWT / REST| I[Inventory Service\nNode.js + Express :4000]
-    A --> PA[(Neon PostgreSQL\nauth_db)]
-    I --> PI[(Neon PostgreSQL\ninventory_db)]
-    I --> R[(Redis)]
-    R --> Q[Bull delayed delivery jobs]
-    I --> W[Reservation expiry worker]
-    subgraph Local infrastructure
-      F
-      A
-      I
-      R
-      Q
-      W
-    end
+flowchart LR
+    Client[React / Nginx] --> Auth[Auth API :5000]
+    Client --> Inventory[Inventory API :4000]
+    Auth --> AuthDB[(Auth PostgreSQL)]
+    Inventory --> InventoryDB[(Inventory PostgreSQL)]
+    Inventory --> Redis[(Redis / Bull)]
 ```
 
-**Design decisions**
-
-- **Service separation:** Authentication/administration and inventory/reservations have independent Express services and PostgreSQL databases.
-- **Prisma ORM:** Database access and schema management are handled per service.
-- **JWT-based access:** Role-aware frontend routing and authenticated API calls.
-- **Atomic reservations:** Stock is decremented atomically to reduce overbooking under concurrent demand.
-- **Asynchronous workflows:** Redis/Bull supports delayed delivery confirmation; a periodic worker expires uncollected pickup reservations.
-- **Deployment-ready frontend:** Vite produces static assets served by Nginx rather than running the development server in the production image.
+For service responsibilities, data ownership, reservation state transitions, concurrency, failure modes, and infrastructure diagrams, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ### Technology stack
 
@@ -111,7 +95,7 @@ flowchart TB
 | Background processing | Redis, Bull, scheduled reservation-expiry worker |
 | Containers | Docker, Docker Compose, Nginx |
 | CI/CD | Jenkins controller, dedicated Jenkins agent, Git, Docker CLI |
-| Planned quality & security | Unit tests, SonarQube, quality gates, Trivy |
+| Quality & security (Phases 2–3) | Unit tests, SonarQube, quality gates, Trivy |
 | Planned operations | SSH deployment, health verification, rollback, Prometheus, Grafana, Loki |
 
 ## 🗂️ Project structure
@@ -120,7 +104,7 @@ The following is a **high-level** structure; filenames and paths may vary with t
 
 ```text
 RescueChain/
-├── frontend/                    # React + Vite application (verify folder name)
+├── frontend/                    # React + Vite application
 │   ├── src/
 │   ├── Dockerfile
 │   └── nginx.conf
@@ -137,8 +121,13 @@ RescueChain/
 │       └── server.js
 ├── docker/
 │   └── jenkins/
+│       ├── agents/
+│       │   └── Dockerfile
 │       └── docker-compose.yml
-└── docker-compose.yml          # Confirm actual Compose location
+├── Jenkinsfile
+├── docker-compose.yml
+├── README.md
+└── ARCHITECTURE.md
 ```
 
 ## 🚀 Getting started
@@ -240,39 +229,56 @@ Auth service includes registration, login, supplier application review, administ
 
 RescueChain is being extended into an end-to-end DevOps portfolio project. The objective is to **build, validate, scan, publish, deploy, and observe** independently containerized services.
 
-### CI/CD target architecture
+### CI and security workflow (Phases 0–3)
 
 ```mermaid
-flowchart LR
-    G[GitHub push] --> J[Jenkins pipeline]
-    J --> C[Checkout]
-    C --> N[Install dependencies]
-    N --> L[Lint + unit tests]
-    L --> B[Application build]
-    B --> DB[Docker image build]
-    DB --> S[SonarQube + Trivy]
-    S --> P[Registry push]
-    P --> D[Deployment]
-    D --> H[Health checks]
-    H --> O[Observability]
+flowchart TD
+    A[GitHub repository] --> B[Jenkins controller and agent]
+    B --> C[Checkout source]
+    C --> D[Install dependencies]
+    D --> E[ESLint and unit tests]
+    E --> F[Application build]
+    F --> G[Docker image build]
+    G --> H[Docker image push]
+    H --> I[SonarQube analysis]
+    I --> J{Quality gate passes?}
+    J -- No --> K[Fail pipeline]
+    J -- Yes --> L[Trivy scan]
+    L --> M[Security-validated artifact]
+    M -. Phase 4: planned .-> N[SSH / Compose deployment]
+    N -. planned .-> O[Health check and rollback]
+    O -. Phases 5–6: planned .-> P[Notifications and monitoring]
 ```
 
-**Diagram shows the target pipeline, not the current implemented pipeline.**
 
-<!-- ### Current CI progress
+> This is a **logical workflow**, not a verified stage-by-stage reproduction of the current `Jenkinsfile`. The exact order of Docker push and security checks should follow the repository's pipeline configuration.
 
-| Stage / capability | Status |
-| --- | --- |
-| Multi-stage Dockerfiles, Nginx, health endpoints | ✅ Completed |
-| Docker Compose and `.dockerignore` improvements | ✅ Completed |
-| ESLint and Prettier configuration | ✅ Configured |
-| Jenkins in Docker | ✅ Completed |
-| Dedicated Jenkins agent with Git, Node/npm, Docker CLI | ✅ Completed |
-| Jenkins checkout, install, application build | ✅ Completed |
-| Jenkins Docker image build | 🚧 In progress |
-| Jenkins credentials and Docker registry push | ⏳ Planned |
-| Automated unit tests and enforced lint gate | ⏳ Planned |
-| SonarQube, Trivy, deployment, alerts, monitoring | ⏳ Planned | -->
+### Milestone status
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| **0 — Production readiness** | Multi-stage Dockerfiles, Nginx serving the Vite build, health endpoints, Compose improvements, `.dockerignore`, ESLint, Prettier | ✅ Complete |
+| **1 — Jenkins** | Dockerized Jenkins, agents, credentials, pipelines, parameters, shared libraries; Blue Ocean optional | ✅ Complete (per project update) |
+| **2 — Continuous integration** | Checkout → Install → ESLint → Unit Tests → Build → Docker Build → Docker Push | ✅ Complete (per project update) |
+| **3 — Security** | SonarQube → Quality Gate → Trivy | ✅ Complete (per project update) |
+| **4 — Deployment** | SSH → `docker compose pull` → Rolling Restart → Health Check → Rollback | ⏳ Planned |
+| **5 — Notifications** | Slack/Discord alerts for builds and deployments | ⏳ Planned |
+| **6 — Monitoring** | Prometheus, Grafana, Node Exporter, cAdvisor, Loki, Promtail | ⏳ Planned |
+
+### Jenkins CI and security
+
+The project has progressed through **Phase 3**, including automated build workflows and security tooling. Its planned end-to-end DevOps lifecycle is to promote successfully built and security-validated container images into a deployment environment, followed by health verification, alerting, and observability.
+
+**Quality and security tooling:**
+
+- **ESLint and Prettier:** JavaScript linting and consistent formatting.
+- **Unit tests:** Test execution as part of the CI milestone.
+- **Docker:** Repeatable, containerized application builds.
+- **SonarQube:** Static code analysis and maintainability/security findings.
+- **Quality Gate:** Pipeline-level acceptance criteria for code quality.
+- **Trivy:** Container and dependency vulnerability scanning.
+
+> Exact quality thresholds, scan severity policies, registry naming, and image tags depend on your Jenkins and SonarQube configuration. Add them here once verified rather than publishing invented metrics.
 
 ### Security and operations principles
 
@@ -283,17 +289,23 @@ flowchart LR
 - Verify application health after deployment and define a rollback procedure.
 - Prefer private/internal Redis networking; avoid exposing databases and queue infrastructure publicly.
 
-<!-- ## 🗺️ Roadmap
+## 🗺️ Roadmap
 
-- [x] **Phase 0 — Production readiness:** multi-stage builds, Nginx, health checks, Compose, lint/format configuration
-- [ ] **Phase 1 — Jenkins foundations:** controller and agent completed; credentials, parameters, shared libraries remaining
-- [ ] **Phase 2 — Continuous integration:** checkout/install/build working; Docker build/push, tests, enforced lint pending
-- [ ] **Phase 3 — Security:** SonarQube, quality gates, Trivy
-- [ ] **Phase 4 — Deployment:** SSH deployment, Compose image pulls, controlled restarts, health checks, rollback
-- [ ] **Phase 5 — Notifications:** Slack or Discord pipeline notifications
+- [x] **Phase 0 — Production readiness:** multi-stage Dockerfiles, Nginx, health endpoints, Compose, `.dockerignore`, ESLint, Prettier
+- [x] **Phase 1 — Jenkins:** controller, agents, credentials, pipelines, parameters, shared libraries (Blue Ocean optional)
+- [x] **Phase 2 — CI:** checkout, dependency installation, lint, unit tests, build, Docker build and push
+- [x] **Phase 3 — Security:** SonarQube analysis, quality gate, Trivy scanning
+- [ ] **Phase 4 — Deployment:** SSH, `docker compose pull`, rolling restart, health checks, rollback
+- [ ] **Phase 5 — Notifications:** Slack or Discord for build started/failed and deployment succeeded/failed
 - [ ] **Phase 6 — Monitoring:** Prometheus, Grafana, Node Exporter, cAdvisor, Loki, Promtail
 
-**Potential product enhancements:** WebSocket-driven inventory updates, richer delivery tracking, supplier reliability insights, and improved automated test coverage. -->
+**Current focus: Phase 4 — automated deployment.** The deployment workflow is a planned milestone, not yet claimed as implemented.
+
+**Potential product enhancements:** WebSocket-driven inventory updates, richer delivery tracking, supplier reliability insights, and improved automated test coverage.
+
+## 📐 Technical documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — service boundaries, component diagrams, data models, request flows, asynchronous jobs, concurrency controls, security boundaries, and deployment considerations.
 
 ## 🧠 Engineering challenges
 
