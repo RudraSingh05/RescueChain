@@ -1,107 +1,132 @@
 import { useEffect, useState } from "react";
+import { Check, X, RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { authAPI } from "../services/api";
-
+import {
+  PageHeader,
+  Panel,
+  TableScroll,
+  Status,
+  Empty,
+  Loading,
+  Notice,
+  readable,
+} from "../components/UI";
+import { authAPI, errorMessage } from "../services/api";
 export default function SupplierApplications() {
   const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  // Reusable refresh function for approve/reject
-  const fetchApplications = async () => {
-    try {
-      const res = await authAPI.get("/admin/supplier-applications");
-      setApplications(res.data);
-    } catch {
-      alert("Failed to fetch applications");
-    }
-  };
-
-  // Initial page load
-  useEffect(() => {
-    const loadApplications = async () => {
-      try {
-        const res = await authAPI.get("/admin/supplier-applications");
-        setApplications(res.data);
-      } catch {
-        alert("Failed to fetch applications");
-      }
-    };
-
-    loadApplications();
-  }, []);
-
-  const approve = async (id) => {
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  async function load() {
     setLoading(true);
-
+    setError("");
     try {
-      await authAPI.post(`/admin/supplier-approve/${id}`);
-      await fetchApplications();
-    } catch {
-      alert("Approval failed");
+      const r = await authAPI.get("/admin/supplier-applications");
+      setApplications(r.data);
+    } catch (e) {
+      setError(errorMessage(e, "Unable to load applications"));
     } finally {
       setLoading(false);
     }
-  };
-
-  const reject = async (id) => {
+  }
+  useEffect(() => {
+    load();
+  }, []);
+  async function decide(id, action) {
+    if (
+      action === "reject" &&
+      !window.confirm("Reject this supplier application?")
+    )
+      return;
+    setBusy(id);
+    setError("");
+    setSuccess("");
     try {
-      await authAPI.post(`/admin/supplier-reject/${id}`);
-      alert("Supplier rejected");
-      await fetchApplications();
-    } catch {
-      alert("Rejection failed");
+      await authAPI.post(`/admin/supplier-${action}/${id}`);
+      setSuccess(
+        `Application ${action === "approve" ? "approved" : "rejected"}.`,
+      );
+      await load();
+    } catch (e) {
+      setError(errorMessage(e, `Unable to ${action} application`));
+    } finally {
+      setBusy(null);
     }
-  };
-
+  }
   return (
     <DashboardLayout>
-      <h1 className="page-title">Supplier Applications</h1>
-
-      <table className="supplier-table">
-        <thead>
-          <tr>
-            <th>Organization</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Approve</th>
-            <th>Reject</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {applications.map((app) => (
-            <tr key={app.id}>
-              <td>{app.organizationName}</td>
-              <td>{app.type}</td>
-
-              <td>
-                <span className={`status ${app.status.toLowerCase()}`}>
-                  {app.status}
-                </span>
-              </td>
-
-              <td>
-                <button
-                  disabled={loading}
-                  className="table-approve-btn"
-                  onClick={() => approve(app.id)}
-                >
-                  {loading ? "Processing..." : "Approve"}
-                </button>
-              </td>
-
-              <td>
-                <button
-                  className="table-reject-btn"
-                  onClick={() => reject(app.id)}
-                >
-                  Reject
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <PageHeader
+        eyebrow="SUPPLIER NETWORK"
+        title="Supplier applications"
+        description="Review and manage organizations requesting access to the network."
+        action={
+          <button className="btn btn-secondary" onClick={load}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        }
+      />
+      <Notice>{error}</Notice>
+      <Notice type="success">{success}</Notice>
+      <Panel
+        title="Applications"
+        subtitle={`${applications.length} submitted applications`}
+      >
+        {loading ? (
+          <Loading />
+        ) : applications.length ? (
+          <TableScroll>
+            <thead>
+              <tr>
+                <th>Organization</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th className="right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {applications.map((a) => (
+                <tr key={a.id}>
+                  <td className="primary-cell">{a.organizationName}</td>
+                  <td>{readable(a.type)}</td>
+                  <td>
+                    <Status value={a.status} />
+                  </td>
+                  <td>
+                    <div className="table-actions">
+                      {a.status === "PENDING" ? (
+                        <>
+                          <button
+                            className="btn btn-small btn-primary"
+                            disabled={busy !== null}
+                            onClick={() => decide(a.id, "approve")}
+                          >
+                            <Check size={15} /> Approve
+                          </button>
+                          <button
+                            className="btn btn-small btn-secondary"
+                            disabled={busy !== null}
+                            onClick={() => decide(a.id, "reject")}
+                          >
+                            <X size={15} /> Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="muted">Reviewed</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </TableScroll>
+        ) : (
+          <Empty
+            title="No applications"
+            description="New supplier requests will appear here."
+          />
+        )}
+      </Panel>
     </DashboardLayout>
   );
 }

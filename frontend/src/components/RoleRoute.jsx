@@ -1,12 +1,21 @@
-import useAuthStore from "../store/authStore";
 import { Navigate } from "react-router-dom";
-
+import useAuthStore from "../store/authStore";
 export default function RoleRoute({ role, children }) {
-    const userRole = useAuthStore((state) => state.role);
-
-    if (userRole !== role) {
-        return <Navigate to="/" />;
-    }
-
-    return children;
+  const current = useAuthStore((s) => s.role);
+  return current === role ? (
+    children
+  ) : (
+    <Navigate
+      to={
+        current === "ADMIN"
+          ? "/dashboard/admin"
+          : current === "SUPPLIER"
+            ? "/dashboard/supplier"
+            : current === "USER"
+              ? "/dashboard/user"
+              : "/login"
+      }
+      replace
+    />
+  );
 }

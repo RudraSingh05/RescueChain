@@ -1,32 +1,82 @@
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { inventoryAPI } from "../services/api";
-
+import {
+  PageHeader,
+  Panel,
+  TableScroll,
+  Status,
+  Empty,
+  Loading,
+  Notice,
+  readable,
+} from "../components/UI";
+import { inventoryAPI, errorMessage } from "../services/api";
 export default function SupplierReservations() {
-  const [reservations, setReservations] = useState([]);
-
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await inventoryAPI.get("/supplier/reservations");
+      setRows(r.data);
+    } catch (e) {
+      setError(errorMessage(e, "Unable to load reservations"));
+    } finally {
+      setLoading(false);
+    }
+  }
   useEffect(() => {
-    const fetchReservations = async () => {
-      const res = await inventoryAPI.get("/supplier/reservations");
-      setReservations(res.data);
-    };
-
-    fetchReservations();
+    load();
   }, []);
-
   return (
     <DashboardLayout>
-      <h1 className="page-title">Supplier Reservations</h1>
-      <div className="cards">
-        {reservations.map((r) => (
-          <div key={r.id} className="card">
-            <p className="card-detail">Item: {r.itemName}</p>
-            <p className="card-detail">Quantity: {r.quantity}</p>
-            <p className="card-detail">Status: {r.status}</p>
-            <p className="card-detail">Type: {r.type}</p>
-          </div>
-        ))}
-      </div>
+      <PageHeader
+        eyebrow="SUPPLIER OPERATIONS"
+        title="Reservations"
+        description="Review requests made against your available inventory."
+        action={
+          <button className="btn btn-secondary" onClick={load}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        }
+      />
+      <Notice>{error}</Notice>
+      <Panel title="Incoming requests" subtitle={`${rows.length} reservations`}>
+        {loading ? (
+          <Loading />
+        ) : rows.length ? (
+          <TableScroll>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Fulfillment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="primary-cell">{r.itemName}</td>
+                  <td>{r.quantity}</td>
+                  <td>{readable(r.type)}</td>
+                  <td>
+                    <Status value={r.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </TableScroll>
+        ) : (
+          <Empty
+            title="No reservations yet"
+            description="New requests will appear here."
+          />
+        )}
+      </Panel>
     </DashboardLayout>
   );
 }

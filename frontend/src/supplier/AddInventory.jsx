@@ -1,109 +1,142 @@
 import { useEffect, useState } from "react";
+import { Plus, RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { inventoryAPI } from "../services/api";
-
+import {
+  PageHeader,
+  Panel,
+  TableScroll,
+  Empty,
+  Loading,
+  Notice,
+} from "../components/UI";
+import { inventoryAPI, errorMessage } from "../services/api";
 export default function AddInventory() {
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [inventory, setInventory] = useState([]);
-
-  const fetchInventory = async () => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  async function load() {
+    setLoading(true);
     try {
-      const res = await inventoryAPI.get("/supplier/my");
-      setInventory(res.data);
-    } catch (error) {
-      console.error("Failed to fetch inventory:", error);
-      alert("Failed to fetch inventory");
+      const r = await inventoryAPI.get("/supplier/my");
+      setItems(r.data);
+    } catch (e) {
+      setError(errorMessage(e, "Unable to load inventory"));
+    } finally {
+      setLoading(false);
     }
-  };
-
+  }
   useEffect(() => {
-    const loadInventory = async () => {
-      try {
-        const res = await inventoryAPI.get("/supplier/my");
-        setInventory(res.data);
-      } catch (error) {
-        console.error("Failed to fetch inventory:", error);
-        alert("Failed to fetch inventory");
-      }
-    };
-
-    loadInventory();
+    load();
   }, []);
-
-  const handleAdd = async () => {
+  async function submit(e) {
+    e.preventDefault();
+    if (!Number.isInteger(Number(quantity)) || Number(quantity) <= 0) {
+      setError("Enter a positive whole-number quantity.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setSuccess("");
     try {
       await inventoryAPI.post("/supplier/add", {
-        itemName,
-        quantity,
+        itemName: itemName.trim(),
+        quantity: Number(quantity),
       });
-
-      alert("Inventory added");
-
       setItemName("");
       setQuantity("");
-
-      await fetchInventory();
-    } catch (error) {
-      alert(error.response?.data?.error || "Failed to add inventory");
+      setSuccess("Inventory added successfully.");
+      await load();
+    } catch (e) {
+      setError(errorMessage(e, "Unable to add inventory"));
+    } finally {
+      setBusy(false);
     }
-  };
-
+  }
   return (
     <DashboardLayout>
-      <div className="supplier-layout">
-        <div className="supplier-left">
-          <h1 className="page-title">Add Inventory</h1>
-
-          <div className="form-card">
-            <input
-              className="form-input"
-              placeholder="Item Name"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-            />
-
-            <input
-              className="form-input"
-              type="number"
-              placeholder="Quantity"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-            />
-
-            <button className="form-btn" onClick={handleAdd}>
-              Add Inventory
+      <PageHeader
+        eyebrow="SUPPLIER OPERATIONS"
+        title="Manage inventory"
+        description="Keep your available emergency supplies accurate and up to date."
+      />
+      <Notice>{error}</Notice>
+      <Notice type="success">{success}</Notice>
+      <div className="form-data-grid">
+        <Panel
+          title="Add a supply item"
+          subtitle="Publish availability to the network"
+        >
+          <form onSubmit={submit} className="form-stack">
+            <label className="field">
+              <span>Item name</span>
+              <input
+                required
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                placeholder="e.g. Oxygen cylinder"
+              />
+            </label>
+            <label className="field">
+              <span>Quantity available</span>
+              <input
+                required
+                min="1"
+                step="1"
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="Enter quantity"
+              />
+            </label>
+            <button className="btn btn-primary" type="submit" disabled={busy}>
+              <Plus size={17} />
+              {busy ? "Adding item…" : "Add to inventory"}
             </button>
-          </div>
-        </div>
-
-        <div className="supplier-right">
-          <h2 className="page-title">My Inventory</h2>
-
-          <table className="supplier-table">
-            <thead>
-              <tr>
-                <th>Item Name</th>
-                <th>Quantity</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {inventory.length === 0 ? (
+          </form>
+        </Panel>
+        <Panel
+          title="Current inventory"
+          subtitle={`${items.length} listed items`}
+          action={
+            <button
+              className="icon-btn"
+              aria-label="Refresh inventory"
+              onClick={load}
+            >
+              <RefreshCw size={17} />
+            </button>
+          }
+        >
+          {loading ? (
+            <Loading />
+          ) : items.length ? (
+            <TableScroll>
+              <thead>
                 <tr>
-                  <td colSpan="2">No inventory added</td>
+                  <th>Item</th>
+                  <th>Available quantity</th>
                 </tr>
-              ) : (
-                inventory.map((item) => (
+              </thead>
+              <tbody>
+                {items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.itemName}</td>
+                    <td className="primary-cell">{item.itemName}</td>
                     <td>{item.quantity}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </TableScroll>
+          ) : (
+            <Empty
+              title="No inventory listed"
+              description="Add your first item using the form."
+            />
+          )}
+        </Panel>
       </div>
     </DashboardLayout>
   );

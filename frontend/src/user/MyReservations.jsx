@@ -1,64 +1,88 @@
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { inventoryAPI } from "../services/api";
-
+import {
+  PageHeader,
+  Panel,
+  TableScroll,
+  Status,
+  Empty,
+  Loading,
+  Notice,
+  readable,
+  formatDate,
+} from "../components/UI";
+import { inventoryAPI, errorMessage } from "../services/api";
 export default function MyReservations() {
-  const [reservations, setReservations] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState("");
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await inventoryAPI.get("/user/my");
+      setRows(r.data);
+    } catch (e) {
+      setError(errorMessage(e, "Unable to load reservations"));
+    } finally {
+      setLoading(false);
+    }
+  }
   useEffect(() => {
-    const loadReservations = async () => {
-      try {
-        const res = await inventoryAPI.get("/user/my");
-        setReservations(res.data);
-      } catch (error) {
-        console.error("Failed to fetch reservations:", error);
-        alert("Failed to fetch reservations");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadReservations();
+    load();
   }, []);
-
   return (
     <DashboardLayout>
-      <h1 className="page-title">My Reservations</h1>
-
-      {loading ? (
-        <p className="loading-text">Loading...</p>
-      ) : (
-        <table className="supplier-table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Quantity</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Expires</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {reservations.map((reservation) => (
-              <tr key={reservation.id}>
-                <td>{reservation.itemName}</td>
-                <td>{reservation.quantity}</td>
-                <td>{reservation.type}</td>
-                <td>{reservation.status}</td>
-                <td>
-                  {reservation.expiresAt
-                    ? new Date(
-                        reservation.expiresAt,
-                      ).toLocaleTimeString()
-                    : "N/A"}
-                </td>
+      <PageHeader
+        eyebrow="YOUR REQUESTS"
+        title="My reservations"
+        description="Keep track of reserved supplies and their fulfillment status."
+        action={
+          <button className="btn btn-secondary" onClick={load}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        }
+      />
+      <Notice>{error}</Notice>
+      <Panel
+        title="Reservation history"
+        subtitle={`${rows.length} reservations`}
+      >
+        {loading ? (
+          <Loading />
+        ) : rows.length ? (
+          <TableScroll>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Fulfillment</th>
+                <th>Status</th>
+                <th>Expires at</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="primary-cell">{r.itemName}</td>
+                  <td>{r.quantity}</td>
+                  <td>{readable(r.type)}</td>
+                  <td>
+                    <Status value={r.status} />
+                  </td>
+                  <td>{formatDate(r.expiresAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </TableScroll>
+        ) : (
+          <Empty
+            title="No reservations yet"
+            description="Find nearby supplies to make your first reservation."
+          />
+        )}
+      </Panel>
     </DashboardLayout>
   );
 }

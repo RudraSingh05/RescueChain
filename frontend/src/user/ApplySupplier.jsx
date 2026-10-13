@@ -1,183 +1,154 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { MapContainer, TileLayer } from "react-leaflet";
+import { Crosshair, Send } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { authAPI } from "../services/api";
-
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-  useMap,
-} from "react-leaflet";
-
-// Update map view when selected location changes
-function ChangeMapView({ latitude, longitude }) {
-  const map = useMap();
-
-  useEffect(() => {
-    map.setView([latitude, longitude], 17);
-  }, [map, latitude, longitude]);
-
-  return null;
-}
-
-// Allow user to click on map and select location
-function LocationMarker({
-  latitude,
-  longitude,
-  setLatitude,
-  setLongitude,
-}) {
-  useMapEvents({
-    click(e) {
-      setLatitude(e.latlng.lat);
-      setLongitude(e.latlng.lng);
-    },
-  });
-
-  if (latitude === null || longitude === null) {
-    return null;
-  }
-
-  return <Marker position={[latitude, longitude]} />;
-}
-
+import { PageHeader, Panel, Notice } from "../components/UI";
+import { ChangeMapView, LocationMarker } from "../components/MapTools";
+import { authAPI, errorMessage } from "../services/api";
+const TYPES = [
+  ["WAREHOUSE", "Warehouse"],
+  ["PHARMACY", "Pharmacy"],
+  ["BLOOD_BANK", "Blood bank"],
+  ["OXYGEN_SUPPLIER", "Oxygen supplier"],
+];
 export default function ApplySupplier() {
-  const [form, setForm] = useState({
-    organizationName: "",
-    type: "",
-  });
-
+  const [form, setForm] = useState({ organizationName: "", type: "" });
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
-
-  const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  // Detect user location
-  const detectLocation = () => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  function detect() {
     if (!navigator.geolocation) {
-      alert("Geolocation not supported");
+      setError("Geolocation is unavailable in this browser.");
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
+      (p) => {
+        setLatitude(p.coords.latitude);
+        setLongitude(p.coords.longitude);
       },
-      (error) => {
-        console.error("Failed to detect location:", error);
-        alert("Unable to detect your location");
-      },
+      () =>
+        setError(
+          "Location unavailable. Click the map to select your location.",
+        ),
     );
-  };
-
-  const handleSubmit = async (e) => {
+  }
+  async function submit(e) {
     e.preventDefault();
-
-    if (latitude === null || longitude === null) {
-      alert("Please select your location on the map");
+    if (latitude == null || longitude == null) {
+      setError("Select your organization location on the map.");
       return;
     }
-
+    setBusy(true);
+    setError("");
+    setSuccess("");
     try {
-      await authAPI.post("/supplier/apply", {
-        ...form,
-        latitude,
-        longitude,
-      });
-
-      alert("Supplier application submitted");
-
-      setForm({
-        organizationName: "",
-        type: "",
-      });
-
+      await authAPI.post("/supplier/apply", { ...form, latitude, longitude });
+      setSuccess("Your application has been submitted.");
+      setForm({ organizationName: "", type: "" });
       setLatitude(null);
       setLongitude(null);
-    } catch (error) {
-      alert(error.response?.data?.error || "Application failed");
+    } catch (e) {
+      setError(errorMessage(e, "Unable to submit application"));
+    } finally {
+      setBusy(false);
     }
-  };
-
+  }
   return (
     <DashboardLayout>
-      <h1 className="page-title">Apply to Become Supplier</h1>
-
-      <div className="side-by-side">
-        <form onSubmit={handleSubmit} className="form-card">
-          <input
-            className="form-input"
-            name="organizationName"
-            placeholder="Organization Name"
-            value={form.organizationName}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="form-input"
-            name="type"
-            placeholder="Type (Hospital / NGO / Pharmacy)"
-            value={form.type}
-            onChange={handleChange}
-            required
-          />
-
-          <div className="form-btn-group">
+      <PageHeader
+        eyebrow="JOIN THE NETWORK"
+        title="Become a supplier"
+        description="Apply to make your organization’s essential supplies discoverable."
+      />
+      <Notice>{error}</Notice>
+      <Notice type="success">{success}</Notice>
+      <div className="map-form-grid">
+        <Panel
+          title="Organization details"
+          subtitle="Tell us about your supply organization"
+        >
+          <form onSubmit={submit} className="form-stack">
+            <label className="field">
+              <span>Organization name</span>
+              <input
+                required
+                value={form.organizationName}
+                onChange={(e) =>
+                  setForm((v) => ({ ...v, organizationName: e.target.value }))
+                }
+                placeholder="Registered organization name"
+              />
+            </label>
+            <label className="field">
+              <span>Supplier category</span>
+              <select
+                required
+                value={form.type}
+                onChange={(e) =>
+                  setForm((v) => ({ ...v, type: e.target.value }))
+                }
+              >
+                <option value="">Select a category</option>
+                {TYPES.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="location-info">
+              <span className="field-caption">LOCATION</span>
+              <p>
+                {latitude == null
+                  ? "Choose your location on the map or use your current location."
+                  : `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+              </p>
+            </div>
             <button
               type="button"
-              className="form-btn-secondary"
-              onClick={detectLocation}
+              className="btn btn-secondary"
+              onClick={detect}
             >
-              Use My Location
+              <Crosshair size={17} /> Use my location
             </button>
-
-            <button className="form-btn" type="submit">
-              Apply
+            <button type="submit" disabled={busy} className="btn btn-primary">
+              <Send size={16} />
+              {busy ? "Submitting…" : "Submit application"}
             </button>
-          </div>
-        </form>
-
-        <div className="map-container">
-          <MapContainer
-            center={[20.5937, 78.9629]}
-            zoom={5}
-            style={{ height: "100%", width: "100%" }}
-          >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-            {latitude !== null && longitude !== null && (
-              <ChangeMapView
+          </form>
+        </Panel>
+        <Panel
+          title="Organization location"
+          subtitle="Click the map to place your location marker"
+        >
+          <div className="map-frame">
+            <MapContainer
+              center={[20.5937, 78.9629]}
+              zoom={5}
+              scrollWheelZoom={false}
+              className="leaflet-map"
+            >
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {latitude != null && (
+                <ChangeMapView latitude={latitude} longitude={longitude} />
+              )}
+              <LocationMarker
                 latitude={latitude}
                 longitude={longitude}
+                onChange={(lat, lng) => {
+                  setLatitude(lat);
+                  setLongitude(lng);
+                }}
               />
-            )}
-
-            <LocationMarker
-              latitude={latitude}
-              longitude={longitude}
-              setLatitude={setLatitude}
-              setLongitude={setLongitude}
-            />
-          </MapContainer>
-        </div>
+            </MapContainer>
+          </div>
+        </Panel>
       </div>
-
-      {/* Location preview can be enabled later if needed */}
-      {/*
-      {latitude !== null && longitude !== null && (
-        <p className="location-preview">
-          Selected Location: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-        </p>
-      )}
-      */}
     </DashboardLayout>
   );
 }

@@ -1,38 +1,61 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Search,
+  ClipboardList,
+  Handshake,
+  PackagePlus,
+  Boxes,
+  Truck,
+  Users,
+  UserRoundCheck,
+  ScrollText,
+  PackageSearch,
+} from "lucide-react";
 import useAuthStore from "../store/authStore";
-
-export default function Sidebar() {
-  const role = useAuthStore((state) => state.role);
-
+const links = {
+  USER: [
+    ["/dashboard/user", "Overview", LayoutDashboard],
+    ["/suppliers", "Find supplies", Search],
+    ["/my-reservations", "My reservations", ClipboardList],
+    ["/apply-supplier", "Become a supplier", Handshake],
+  ],
+  SUPPLIER: [
+    ["/dashboard/supplier", "Overview", LayoutDashboard],
+    ["/inventory", "Inventory", PackagePlus],
+    ["/update-stock", "Update stock", Boxes],
+    ["/supplier-reservations", "Reservations", Truck],
+  ],
+  ADMIN: [
+    ["/dashboard/admin", "Overview", LayoutDashboard],
+    ["/admin/supplier-applications", "Applications", UserRoundCheck],
+    ["/admin/users", "Users", Users],
+    ["/admin/inventory", "Inventory", PackageSearch],
+    ["/admin/logs", "Activity logs", ScrollText],
+  ],
+};
+export default function Sidebar({ onNavigate }) {
+  const role = useAuthStore((s) => s.role);
   return (
-    <div className="sidebar">
-      {role === "USER" && (
-        <>
-          <Link className="sidebar-link" to="/dashboard/user">Dashboard</Link>
-          <Link className="sidebar-link" to="/suppliers">Find Suppliers</Link>
-          <Link className="sidebar-link" to="/my-reservations">My Reservations</Link>
-          <Link className="sidebar-link" to="/apply-supplier">Become Supplier</Link>
-        </>
-      )}
-      {role === "SUPPLIER" && (
-        <>
-          <Link className="sidebar-link" to="/dashboard/supplier">Dashboard</Link>
-          <Link className="sidebar-link" to="/inventory">Add Inventory</Link>
-          <Link className="sidebar-link" to="/update-stock">Update Stock</Link>
-          <Link className="sidebar-link" to="/supplier-reservations">Reservations</Link>
-        </>
-      )}
-      {role === "ADMIN" && (
-        <>
-          <Link className="sidebar-link" to="/dashboard/admin">Dashboard</Link>
-          <Link className="sidebar-link" to="/admin/supplier-applications">Supplier Approvals</Link>
-          <Link className="sidebar-link" to="/admin/logs">Activity Logs</Link>
-          <Link className="sidebar-link" to="/admin/users">Users</Link>
-          {/* <Link className="sidebar-link" to="/admin/suppliers">Suppliers</Link> */}
-          <Link className="sidebar-link" to="/admin/inventory">Inventory</Link>
-          {/* <Link className="sidebar-link" to="/admin/reservations">Reservations</Link> */}
-        </>
-      )}
-    </div>
+    <>
+      <div className="sidebar-heading">WORKSPACE</div>
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        {(links[role] || []).map(([to, label, Icon]) => (
+          <NavLink
+            key={to}
+            to={to}
+            end
+            onClick={onNavigate}
+            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+          >
+            <Icon size={18} strokeWidth={1.7} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+      <div className="sidebar-foot">
+        <span className="online-dot" /> Emergency coordination network
+      </div>
+    </>
   );
 }

@@ -1,102 +1,110 @@
 import { useEffect, useState } from "react";
+import { RefreshCw, Plus } from "lucide-react";
 import DashboardLayout from "../layout/DashboardLayout";
-import { inventoryAPI } from "../services/api";
-
+import { PageHeader, Panel, Empty, Loading, Notice } from "../components/UI";
+import { inventoryAPI, errorMessage } from "../services/api";
 export default function UpdateStock() {
-  const [inventory, setInventory] = useState([]);
-  const [updateValues, setUpdateValues] = useState({});
-
-  const fetchInventory = async () => {
+  const [items, setItems] = useState([]);
+  const [values, setValues] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  async function load() {
+    setLoading(true);
     try {
-      const res = await inventoryAPI.get("/supplier/my");
-      setInventory(res.data);
-    } catch (error) {
-      console.error("Failed to fetch inventory:", error);
-      alert("Failed to fetch inventory");
+      const r = await inventoryAPI.get("/supplier/my");
+      setItems(r.data);
+    } catch (e) {
+      setError(errorMessage(e, "Unable to load inventory"));
+    } finally {
+      setLoading(false);
     }
-  };
-
+  }
   useEffect(() => {
-    const loadInventory = async () => {
-      try {
-        const res = await inventoryAPI.get("/supplier/my");
-        setInventory(res.data);
-      } catch (error) {
-        console.error("Failed to fetch inventory:", error);
-        alert("Failed to fetch inventory");
-      }
-    };
-
-    loadInventory();
+    load();
   }, []);
-
-  const updateStock = async (itemName, quantity) => {
+  async function update(item) {
+    const amount = Number(values[item.id]);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setError("Enter a positive whole-number quantity.");
+      return;
+    }
+    setBusy(item.id);
+    setError("");
+    setSuccess("");
     try {
       await inventoryAPI.patch("/supplier/update", {
-        itemName,
-        quantity,
+        itemName: item.itemName,
+        quantity: Number(item.quantity) + amount,
       });
-
-      setUpdateValues((prev) => ({
-        ...prev,
-        [itemName]: "",
-      }));
-
-      alert("Inventory Updated");
-
-      await fetchInventory();
-    } catch (error) {
-      console.error("Failed to update inventory:", error);
-      alert("Failed to update inventory");
+      setValues((v) => ({ ...v, [item.id]: "" }));
+      setSuccess(`${item.itemName} updated.`);
+      await load();
+    } catch (e) {
+      setError(errorMessage(e, "Unable to update stock"));
+    } finally {
+      setBusy(null);
     }
-  };
-
-  const handleInputChange = (itemName, value) => {
-    setUpdateValues((prev) => ({
-      ...prev,
-      [itemName]: value,
-    }));
-  };
-
+  }
   return (
     <DashboardLayout>
-      <h1 className="page-title">Update Stock</h1>
-
-      <div className="cards">
-        {inventory.map((item) => (
-          <div key={item.id} className="card">
-            <p className="card-item-name">{item.itemName}</p>
-
-            <p className="card-item-qty">
-              Current Quantity: {item.quantity}
-            </p>
-
-            <input
-              type="number"
-              className="form-input"
-              placeholder="Add quantity"
-              value={updateValues[item.itemName] || ""}
-              onChange={(e) =>
-                handleInputChange(item.itemName, e.target.value)
-              }
-            />
-
-            <button
-              className="card-btn"
-              disabled={!updateValues[item.itemName]}
-              onClick={() =>
-                updateStock(
-                  item.itemName,
-                  item.quantity +
-                    Number(updateValues[item.itemName] || 0),
-                )
-              }
+      <PageHeader
+        eyebrow="SUPPLIER OPERATIONS"
+        title="Update stock"
+        description="Add received units to your currently available quantities."
+        action={
+          <button className="btn btn-secondary" onClick={load}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        }
+      />
+      <Notice>{error}</Notice>
+      <Notice type="success">{success}</Notice>
+      {loading ? (
+        <Loading />
+      ) : items.length ? (
+        <div className="stock-grid">
+          {items.map((item) => (
+            <Panel
+              key={item.id}
+              title={item.itemName}
+              subtitle="Current availability"
             >
-              Update Stock
-            </button>
-          </div>
-        ))}
-      </div>
+              <div className="stock-count">
+                {item.quantity}
+                <span>units available</span>
+              </div>
+              <label className="field">
+                <span>Additional units</span>
+                <input
+                  min="1"
+                  step="1"
+                  type="number"
+                  value={values[item.id] ?? ""}
+                  placeholder="Enter quantity to add"
+                  onChange={(e) =>
+                    setValues((v) => ({ ...v, [item.id]: e.target.value }))
+                  }
+                />
+              </label>
+              <button
+                className="btn btn-primary btn-full"
+                disabled={busy !== null || !values[item.id]}
+                onClick={() => update(item)}
+              >
+                <Plus size={16} />
+                {busy === item.id ? "Updating…" : "Add stock"}
+              </button>
+            </Panel>
+          ))}
+        </div>
+      ) : (
+        <Empty
+          title="No inventory found"
+          description="Add inventory before updating quantities."
+        />
+      )}
     </DashboardLayout>
   );
 }
