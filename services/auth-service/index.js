@@ -1,3 +1,5 @@
+const { version } = require("./package.json");
+
 require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
@@ -15,13 +17,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-
-
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/supplier", supplierRoutes);
 app.use("/admin", adminRoutes);
-
 
 app.use((req, res, next) => {
   console.log("REQUEST RECEIVED:", req.method, req.url);
@@ -33,7 +32,13 @@ app.get("/protected", authenticate, (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "Auth Service Running ✅" });
+  res.status(200).json({
+    status: "UP",
+    service: "auth-service",
+    version,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 module.exports = app;

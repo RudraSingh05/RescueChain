@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 async function register({ name, email, password }) {
   const existingUser = await prisma.user.findUnique({
-    where: { email }
+    where: { email },
   });
 
   if (existingUser) {
@@ -20,19 +20,19 @@ async function register({ name, email, password }) {
       name,
       email,
       password: hashedPassword,
-      role: "USER"
-    }
+      role: "USER",
+    },
   });
 
   return generateToken({
     id: user.id,
-    role: user.role
+    role: user.role,
   });
 }
 
 async function login({ email, password }) {
   const user = await prisma.user.findUnique({
-    where: { email }
+    where: { email },
   });
 
   if (!user) {
@@ -47,7 +47,7 @@ async function login({ email, password }) {
 
   return generateToken({
     id: user.id,
-    role: user.role
+    role: user.role,
   });
 }
 

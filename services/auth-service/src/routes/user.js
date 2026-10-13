@@ -12,15 +12,15 @@ router.get("/me", authenticate, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: {
-        id: req.user.userId
+        id: req.user.userId,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
 
     res.json(user);

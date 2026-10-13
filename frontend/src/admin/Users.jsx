@@ -3,78 +3,111 @@ import DashboardLayout from "../layout/DashboardLayout";
 import { authAPI } from "../services/api";
 
 export default function Users() {
-    const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]);
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+  const fetchUsers = async () => {
+    try {
+      const res = await authAPI.get("/admin/users");
+      setUsers(res.data);
+    } catch {
+      alert("Failed to load users");
+    }
+  };
 
-    const fetchUsers = async () => {
-        try {
-            const res = await authAPI.get("/admin/users");
-            setUsers(res.data);
-        } catch {
-            alert("Failed to load users");
-        }
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const res = await authAPI.get("/admin/users");
+        setUsers(res.data);
+      } catch {
+        alert("Failed to load users");
+      }
     };
 
-    const blockUser = async (id) => {
-        await authAPI.patch(`/admin/users/${id}/block`);
-        fetchUsers();
-    };
+    loadUsers();
+  }, []);
 
-    const unblockUser = async (id) => {
-        await authAPI.patch(`/admin/users/${id}/unblock`);
-        fetchUsers();
-    };
+  const blockUser = async (id) => {
+    try {
+      await authAPI.patch(`/admin/users/${id}/block`);
+      await fetchUsers();
+    } catch (error) {
+      console.error("Failed to block user:", error);
+      alert("Failed to block user");
+    }
+  };
 
-    const deleteUser = async (id) => {
-        await authAPI.delete(`/admin/users/${id}`);
-        fetchUsers();
-    };
+  const unblockUser = async (id) => {
+    try {
+      await authAPI.patch(`/admin/users/${id}/unblock`);
+      await fetchUsers();
+    } catch (error) {
+      console.error("Failed to unblock user:", error);
+      alert("Failed to unblock user");
+    }
+  };
 
-    return (
-        <DashboardLayout>
-            <h1 className="page-title">Users Management</h1>
+  const deleteUser = async (id) => {
+    try {
+      await authAPI.delete(`/admin/users/${id}`);
+      await fetchUsers();
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      alert("Failed to delete user");
+    }
+  };
 
-            <table className="supplier-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
+  return (
+    <DashboardLayout>
+      <h1 className="page-title">Users Management</h1>
 
-                <tbody>
-                    {users.map((user) => (
-                        <tr key={user.id}>
-                            <td>{user.name}</td>
-                            <td>{user.email}</td>
-                            <td>{user.role}</td>
-                            <td>{user.status}</td>
+      <table className="supplier-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-                            <td>
-                                {user.status === "ACTIVE" ? (
-                                    <button className="table-block-btn" onClick={() => blockUser(user.id)}>
-                                        Block
-                                    </button>
-                                ) : (
-                                    <button className="table-unblock-btn" onClick={() => unblockUser(user.id)}>
-                                        Unblock
-                                    </button>
-                                )}
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id}>
+              <td>{user.name}</td>
+              <td>{user.email}</td>
+              <td>{user.role}</td>
+              <td>{user.status}</td>
 
-                                <button className="table-delete-btn" onClick={() => deleteUser(user.id)}>
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </DashboardLayout>
-    );
+              <td>
+                {user.status === "ACTIVE" ? (
+                  <button
+                    className="table-block-btn"
+                    onClick={() => blockUser(user.id)}
+                  >
+                    Block
+                  </button>
+                ) : (
+                  <button
+                    className="table-unblock-btn"
+                    onClick={() => unblockUser(user.id)}
+                  >
+                    Unblock
+                  </button>
+                )}
+
+                <button
+                  className="table-delete-btn"
+                  onClick={() => deleteUser(user.id)}
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </DashboardLayout>
+  );
 }

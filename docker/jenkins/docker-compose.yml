@@ -1,0 +1,68 @@
+services:
+  # Jenkins Controller
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: rescuechain-jenkins
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+    networks:
+      - jenkins
+
+  # Jenkins Agent
+  rescuechain-agent:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+
+    container_name: rescuechain-agent
+    restart: unless-stopped
+
+    environment:
+      JENKINS_URL: http://jenkins:8080
+      JENKINS_AGENT_NAME: rescuechain-agent-v2
+      JENKINS_SECRET: ${JENKINS_AGENT_SECRET}
+
+    volumes:
+      - ./agents/rescuechain-agent:/home/jenkins/agent
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - jenkins
+
+    depends_on:
+      - jenkins
+
+# Sonarqube 
+  sonarqube:
+    image: sonarqube:community
+    container_name: rescuechain-sonarqube
+    restart: unless-stopped
+
+    ports:
+      - "9000:9000"
+
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+
+    networks:
+      - jenkins
+
+# persistent volumes
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+
+# networks
+networks:
+  jenkins:

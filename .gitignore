@@ -35,3 +35,8 @@ coverage/
 
 # Temporary
 *.tmp
+
+
+docs
+
+docker/jenkins/agents/rescuechain-agent/

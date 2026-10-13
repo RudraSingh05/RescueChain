@@ -6,44 +6,65 @@ export default function UpdateStock() {
   const [inventory, setInventory] = useState([]);
   const [updateValues, setUpdateValues] = useState({});
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
-
   const fetchInventory = async () => {
-    const res = await inventoryAPI.get("/supplier/my");
-    setInventory(res.data);
+    try {
+      const res = await inventoryAPI.get("/supplier/my");
+      setInventory(res.data);
+    } catch (error) {
+      console.error("Failed to fetch inventory:", error);
+      alert("Failed to fetch inventory");
+    }
   };
 
+  useEffect(() => {
+    const loadInventory = async () => {
+      try {
+        const res = await inventoryAPI.get("/supplier/my");
+        setInventory(res.data);
+      } catch (error) {
+        console.error("Failed to fetch inventory:", error);
+        alert("Failed to fetch inventory");
+      }
+    };
+
+    loadInventory();
+  }, []);
+
   const updateStock = async (itemName, quantity) => {
-    await inventoryAPI.patch("/supplier/update", {
-      itemName,
-      quantity
-    });
+    try {
+      await inventoryAPI.patch("/supplier/update", {
+        itemName,
+        quantity,
+      });
 
-    setUpdateValues((prev) => ({
-      ...prev,
-      [itemName]: ""
-    }));
-     alert("Inventory Updated");
+      setUpdateValues((prev) => ({
+        ...prev,
+        [itemName]: "",
+      }));
 
-    fetchInventory();
+      alert("Inventory Updated");
+
+      await fetchInventory();
+    } catch (error) {
+      console.error("Failed to update inventory:", error);
+      alert("Failed to update inventory");
+    }
   };
 
   const handleInputChange = (itemName, value) => {
-    setUpdateValues({
-      ...updateValues,
-      [itemName]: value
-    });
+    setUpdateValues((prev) => ({
+      ...prev,
+      [itemName]: value,
+    }));
   };
 
   return (
     <DashboardLayout>
       <h1 className="page-title">Update Stock</h1>
+
       <div className="cards">
         {inventory.map((item) => (
           <div key={item.id} className="card">
-
             <p className="card-item-name">{item.itemName}</p>
 
             <p className="card-item-qty">
@@ -66,13 +87,13 @@ export default function UpdateStock() {
               onClick={() =>
                 updateStock(
                   item.itemName,
-                  item.quantity + Number(updateValues[item.itemName] || 0)
+                  item.quantity +
+                    Number(updateValues[item.itemName] || 0),
                 )
               }
             >
               Update Stock
             </button>
-
           </div>
         ))}
       </div>
