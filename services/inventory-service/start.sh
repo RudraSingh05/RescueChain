@@ -2,7 +2,7 @@
 #!/bin/sh
 set -eu
 
-node workers/deliveryWorker.js &
+node src/workers/deliveryWorker.js &
 WORKER_PID=$!
 
 node server.js &
