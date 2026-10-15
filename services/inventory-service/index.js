@@ -9,7 +9,18 @@ const adminRoutes = require("./src/routes/admin.routes");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (
+  process.env.FRONTEND_URL || "http://localhost:5173"
+)
+  .split(",")
+  .map((origin) => origin.trim());
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+  })
+);
+
 app.use(express.json());
 
 app.use((req, res, next) => {

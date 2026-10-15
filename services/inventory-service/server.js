@@ -1,11 +1,16 @@
+
+require("dotenv").config();
+
 const app = require("./index");
-const { startReservationExpiryWorker } = require("./src/workers/reservationExpiry");
+const {
+  startReservationExpiryWorker,
+} = require("./src/workers/reservationExpiry");
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
-// Start pickup expiry worker
-startReservationExpiryWorker();
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Inventory Service running on port ${PORT}`);
 
-app.listen(PORT, () => {
-  console.log(`Inventory service running on port ${PORT}`);
+  // Start pickup reservation expiry worker
+  startReservationExpiryWorker();
 });

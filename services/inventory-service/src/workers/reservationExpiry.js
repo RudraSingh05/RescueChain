@@ -1,50 +1,86 @@
+
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-function startReservationExpiryWorker() {
-  setInterval(async () => {
-    try {
-      console.log("Checking expired reservations...");
+let intervalId;
 
-      const now = new Date();
+async function expireReservations() {
+  const now = new Date();
 
-      const expiredReservations = await prisma.reservation.findMany({
-        where: {
-          status: "RESERVED",
-          expiresAt: { lte: now },
-        },
-      });
+  try {
+    const expiredReservations = await prisma.reservation.findMany({
+      where: {
+        status: "RESERVED",
+        expiresAt: { lte: now },
+        type: "PICKUP",
+      },
+      select: {
+        id: true,
+        supplierId: true,
+        itemName: true,
+        quantity: true,
+      },
+    });
 
-      for (const reservation of expiredReservations) {
-        await prisma.$transaction(async (tx) => {
-          const inventory = await tx.inventory.findFirst({
+    for (const reservation of expiredReservations) {
+      try {
+        const expired = await prisma.$transaction(async (tx) => {
+          const claimed = await tx.reservation.updateMany({
+            where: {
+              id: reservation.id,
+              status: "RESERVED",
+              type: "PICKUP",
+              expiresAt: { lte: new Date() },
+            },
+            data: {
+              status: "CANCELLED",
+            },
+          });
+
+          if (claimed.count === 0) {
+            return false;
+          }
+
+          await tx.inventory.updateMany({
             where: {
               supplierId: reservation.supplierId,
               itemName: reservation.itemName,
             },
-          });
-
-          if (inventory) {
-            await tx.inventory.update({
-              where: { id: inventory.id },
-              data: {
-                quantity: inventory.quantity + reservation.quantity,
+            data: {
+              quantity: {
+                increment: reservation.quantity,
               },
-            });
-          }
-
-          await tx.reservation.update({
-            where: { id: reservation.id },
-            data: { status: "CANCELLED" },
+            },
           });
+
+          return true;
         });
 
-        console.log(`Reservation ${reservation.id} expired`);
+        if (expired) {
+          console.log(`Reservation ${reservation.id} expired`);
+        }
+      } catch (error) {
+        console.error(
+          `Failed to expire reservation ${reservation.id}:`,
+          error
+        );
       }
-    } catch (err) {
-      console.error("Expiry worker error:", err);
     }
+  } catch (error) {
+    console.error("Expiry worker error:", error);
+  }
+}
+
+function startReservationExpiryWorker() {
+  if (intervalId) return;
+
+  console.log("Reservation expiry worker started");
+
+  expireReservations().catch(console.error);
+
+  intervalId = setInterval(() => {
+    expireReservations().catch(console.error);
   }, 60000);
 }
 
