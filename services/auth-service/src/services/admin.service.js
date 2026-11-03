@@ -1,21 +1,31 @@
+
 const axios = require("axios");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-async function getApplications(req, res) {
-  const apps = await prisma.supplierApplication.findMany({
-    where: { status: "PENDING" },
-  });
+// Localhost fallback; Render uses the URL configured in its environment.
+const INVENTORY_SERVICE_URL =
+  process.env.INVENTORY_SERVICE_URL || "http://localhost:4000";
 
-  res.json(apps);
+async function getApplications(req, res) {
+  try {
+    const apps = await prisma.supplierApplication.findMany({
+      where: { status: "PENDING" },
+    });
+
+    res.json(apps);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch applications" });
+  }
 }
 
 async function approveApplication(req, res) {
   try {
     const { id } = req.params;
 
-    // 🔒 Admin check
+    // Admin check
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({ error: "Only admin allowed" });
     }
@@ -28,12 +38,16 @@ async function approveApplication(req, res) {
       return res.status(404).json({ error: "Application not found" });
     }
 
-    // ✅ Check if already approved
+    // Check if already approved
     if (application.status === "APPROVED") {
       return res.status(400).json({ error: "Already approved" });
     }
 
-    // ✅ Check if supplier already exists (IMPORTANT)
+    if (application.status !== "PENDING") {
+      return res.status(400).json({ error: "Application is not pending" });
+    }
+
+    // Check if supplier already exists
     const existingSupplier = await prisma.user.findUnique({
       where: { id: application.userId },
     });
@@ -42,11 +56,11 @@ async function approveApplication(req, res) {
       return res.status(400).json({ error: "Supplier already exists" });
     }
 
-    console.log("Calling inventory service...");
+    console.log("Calling inventory service:", INVENTORY_SERVICE_URL);
 
-    // 1️⃣ Create supplier in inventory service
+    // 1. Create supplier in Inventory Service
     await axios.post(
-      "http://localhost:4000/inventory/admin/supplier/create",
+      `${INVENTORY_SERVICE_URL}/inventory/admin/supplier/create`,
       {
         userId: application.userId,
         name: application.organizationName,
@@ -61,19 +75,19 @@ async function approveApplication(req, res) {
       }
     );
 
-    // 2️⃣ Update application status
+    // 2. Update application status
     await prisma.supplierApplication.update({
       where: { id },
       data: { status: "APPROVED" },
     });
 
-    // 3️⃣ Promote user to supplier
+    // 3. Promote user to supplier
     await prisma.user.update({
       where: { id: application.userId },
       data: { role: "SUPPLIER" },
     });
 
-    // 4️⃣ Add activity log (we’ll define model next)
+    // 4. Add activity log
     await prisma.activityLog.create({
       data: {
         action: `Approved supplier ${application.organizationName}`,
@@ -83,7 +97,11 @@ async function approveApplication(req, res) {
 
     res.json({ message: "Supplier approved successfully" });
   } catch (error) {
-    console.error("FULL ERROR:", error.response?.data || error.message);
+    console.error(
+      "FULL ERROR:",
+      error.response?.data || error.message
+    );
+
     res.status(500).json({ error: "Approval failed" });
   }
 }
@@ -100,12 +118,16 @@ async function rejectApplication(req, res) {
       where: { id },
     });
 
+    if (!application) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
     await prisma.supplierApplication.update({
       where: { id },
       data: { status: "REJECTED" },
     });
 
-    // ✅ Log
+    // Add activity log
     await prisma.activityLog.create({
       data: {
         action: `Rejected supplier ${application.organizationName}`,
@@ -218,7 +240,8 @@ async function blockUser(req, res) {
     });
 
     res.json({ message: "User blocked" });
-  } catch {
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to block user" });
   }
 }
@@ -252,7 +275,8 @@ async function unblockUser(req, res) {
     });
 
     res.json({ message: "User unblocked" });
-  } catch {
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to unblock user" });
   }
 }
@@ -285,7 +309,8 @@ async function deleteUser(req, res) {
     });
 
     res.json({ message: "User deleted" });
-  } catch {
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to delete user" });
   }
 }
@@ -296,11 +321,14 @@ async function getInventory(req, res) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    const response = await axios.get("http://localhost:4000/inventory/admin/all", {
-      headers: {
-        Authorization: req.headers.authorization,
-      },
-    });
+    const response = await axios.get(
+      `${INVENTORY_SERVICE_URL}/inventory/admin/all`,
+      {
+        headers: {
+          Authorization: req.headers.authorization,
+        },
+      }
+    );
 
     res.json(response.data);
   } catch (error) {
@@ -311,14 +339,22 @@ async function getInventory(req, res) {
 
 async function getLowStock(req, res) {
   try {
-    const response = await axios.get("http://localhost:4000/inventory/admin/low-stock", {
-      headers: {
-        Authorization: req.headers.authorization,
-      },
-    });
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const response = await axios.get(
+      `${INVENTORY_SERVICE_URL}/inventory/admin/low-stock`,
+      {
+        headers: {
+          Authorization: req.headers.authorization,
+        },
+      }
+    );
 
     res.json(response.data);
-  } catch {
+  } catch (error) {
+    console.error(error.response?.data || error.message);
     res.status(500).json({ error: "Failed to fetch low stock" });
   }
 }

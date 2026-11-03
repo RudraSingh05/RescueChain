@@ -2,10 +2,10 @@ import axios from "axios";
 import useAuthStore from "../store/authStore";
 // Match these to your existing backend URLs; Vite env values are embedded at build time.
 export const authAPI = axios.create({
-    baseURL: import.meta.env.VITE_AUTH_API_URL || "http://localhost:5000",
+    baseURL: "http://localhost:5000",
 });
 export const inventoryAPI = axios.create({
-    baseURL: import.meta.env.VITE_INVENTORY_API_URL || "http://localhost:4000/inventory",
+    baseURL: "http://localhost:4000/inventory",
 });
 for (const api of [authAPI, inventoryAPI]) {
     api.interceptors.request.use((config) => {
