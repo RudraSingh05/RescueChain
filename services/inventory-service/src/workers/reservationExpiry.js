@@ -1,4 +1,3 @@
-
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
@@ -61,10 +60,7 @@ async function expireReservations() {
           console.log(`Reservation ${reservation.id} expired`);
         }
       } catch (error) {
-        console.error(
-          `Failed to expire reservation ${reservation.id}:`,
-          error
-        );
+        console.error(`Failed to expire reservation ${reservation.id}:`, error);
       }
     }
   } catch (error) {

@@ -1,10 +1,7 @@
-
 require("dotenv").config();
 
 const app = require("./index");
-const {
-  startReservationExpiryWorker,
-} = require("./src/workers/reservationExpiry");
+const { startReservationExpiryWorker } = require("./src/workers/reservationExpiry");
 
 const PORT = process.env.PORT || 4000;
 
