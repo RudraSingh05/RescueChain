@@ -33,6 +33,17 @@ The project also serves as a hands-on **DevOps engineering platform**, with cont
 
 > **Project status:** Core application and Dockerized development environment are implemented. Production readiness, Jenkins foundations, continuous integration, and the SonarQube/Trivy security phase are reported complete. Automated deployment, notifications, and monitoring remain planned. This is a project demonstration, not a certified emergency-response service.
 
+## 🌐 Live Deployment
+
+| Component | URL |
+|---|---|
+| Frontend | [RescueChain](https://rescuechain-a-supply-chain.netlify.app) |
+| Auth API | [Auth Service](https://rescuechain-auth.onrender.com) |
+| Inventory API | [Inventory Service](https://rescuechain-inventory.onrender.com) |
+
+> APIs are publicly reachable for demonstration and testing.
+> Protected operations require authentication and appropriate roles.
+
 ## ✨ Features
 
 | Area | Capabilities |
