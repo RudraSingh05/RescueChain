@@ -28,7 +28,6 @@ RUN curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key \
     rm -rf /var/lib/apt/lists/*
 
 # Allow Jenkins user to access the mounted Docker socket
-RUN groupadd -f docker && \
-    usermod -aG docker jenkins
+RUN usermod -aG root jenkins
 
 USER jenkins
